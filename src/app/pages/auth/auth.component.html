@@ -1,0 +1,188 @@
+<div class="access-page">
+  <div class="access-glow access-glow-left"></div>
+  <div class="access-glow access-glow-right"></div>
+
+  <main class="access-shell">
+    <section class="access-hero">
+      <button class="home-link" type="button" (click)="goHome()">
+        <app-lucide-icon name="ArrowLeft" [size]="16"></app-lucide-icon>
+        Volver al inicio
+      </button>
+
+      <div class="brand-chip">
+        <app-lucide-icon name="Zap" [size]="18" color="#00C9A7" fill="#00C9A7"></app-lucide-icon>
+        RetoLab Access
+      </div>
+
+      <h1>Conecta tu talento con retos reales</h1>
+      <p>
+        Inicia sesion para continuar o crea una cuenta nueva y selecciona si participas como estudiante o
+        empresa.
+      </p>
+
+      <div class="hero-points">
+        <div class="hero-point">
+          <app-lucide-icon name="ShieldCheck" [size]="16" color="#00C9A7"></app-lucide-icon>
+          Acceso seguro en tu navegador
+        </div>
+        <div class="hero-point">
+          <app-lucide-icon name="Target" [size]="16" color="#00C9A7"></app-lucide-icon>
+          Rutas separadas por tipo de usuario
+        </div>
+        <div class="hero-point">
+          <app-lucide-icon name="Rocket" [size]="16" color="#00C9A7"></app-lucide-icon>
+          Registro rapido en menos de 1 minuto
+        </div>
+      </div>
+    </section>
+
+    <section class="access-card">
+      <div class="mode-switch">
+        <button
+          type="button"
+          [class.active]="mode === 'login'"
+          (click)="setMode('login')"
+        >
+          <app-lucide-icon name="LogIn" [size]="16"></app-lucide-icon>
+          Iniciar sesion
+        </button>
+        <button
+          type="button"
+          [class.active]="mode === 'register'"
+          (click)="setMode('register')"
+        >
+          <app-lucide-icon name="UserPlus" [size]="16"></app-lucide-icon>
+          Crear cuenta
+        </button>
+      </div>
+
+      @if (errorMessage) {
+      <div class="error-box">
+        <app-lucide-icon name="AlertCircle" [size]="16" color="#B91C1C"></app-lucide-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+      }
+
+      @if (mode === 'login') {
+      <div class="form-grid">
+        <label>
+          Correo
+          <div class="field">
+            <app-lucide-icon name="Mail" [size]="16" color="#64748B"></app-lucide-icon>
+            <input
+              type="email"
+              placeholder="nombre@correo.com"
+              autocomplete="email"
+              [(ngModel)]="loginForm.email"
+              (keyup.enter)="submitLogin()"
+            />
+          </div>
+        </label>
+
+        <label>
+          Contrasena
+          <div class="field">
+            <app-lucide-icon name="Lock" [size]="16" color="#64748B"></app-lucide-icon>
+            <input
+              type="password"
+              placeholder="Tu contrasena"
+              autocomplete="current-password"
+              [(ngModel)]="loginForm.password"
+              (keyup.enter)="submitLogin()"
+            />
+          </div>
+        </label>
+
+        <button class="submit-btn" type="button" (click)="submitLogin()">Entrar a mi dashboard</button>
+      </div>
+      } @else {
+      <div class="form-grid">
+        <label>
+          Nombre
+          <div class="field">
+            <app-lucide-icon name="User" [size]="16" color="#64748B"></app-lucide-icon>
+            <input
+              type="text"
+              placeholder="Tu nombre completo"
+              autocomplete="name"
+              [(ngModel)]="registerForm.name"
+            />
+          </div>
+        </label>
+
+        <label>
+          Correo
+          <div class="field">
+            <app-lucide-icon name="Mail" [size]="16" color="#64748B"></app-lucide-icon>
+            <input
+              type="email"
+              placeholder="nombre@correo.com"
+              autocomplete="email"
+              [(ngModel)]="registerForm.email"
+            />
+          </div>
+        </label>
+
+        <div class="two-columns">
+          <label>
+            Contrasena
+            <div class="field">
+              <app-lucide-icon name="Lock" [size]="16" color="#64748B"></app-lucide-icon>
+              <input
+                type="password"
+                placeholder="Minimo 6 caracteres"
+                autocomplete="new-password"
+                [(ngModel)]="registerForm.password"
+              />
+            </div>
+          </label>
+
+          <label>
+            Confirmar
+            <div class="field">
+              <app-lucide-icon name="LockKeyhole" [size]="16" color="#64748B"></app-lucide-icon>
+              <input
+                type="password"
+                placeholder="Repite tu contrasena"
+                autocomplete="new-password"
+                [(ngModel)]="registerForm.confirmPassword"
+                (keyup.enter)="submitRegister()"
+              />
+            </div>
+          </label>
+        </div>
+
+        <div>
+          <p class="role-label">Selecciona tu perfil</p>
+          <div class="role-grid">
+            @for (option of roleOptions; track option.value) {
+            <button
+              type="button"
+              class="role-option"
+              [class.selected]="registerForm.role === option.value"
+              (click)="selectRole(option.value)"
+            >
+              <div class="role-top">
+                <app-lucide-icon [name]="option.icon" [size]="18"></app-lucide-icon>
+                <span>{{ option.label }}</span>
+              </div>
+              <small>{{ option.description }}</small>
+            </button>
+            }
+          </div>
+        </div>
+
+        <button class="submit-btn" type="button" (click)="submitRegister()">Crear cuenta y continuar</button>
+      </div>
+      }
+
+      <p class="helper-text">
+        @if (mode === 'login') {
+        No tienes cuenta? <button type="button" class="inline-link" (click)="setMode('register')">Registrate</button>
+        } @else {
+        Ya tienes cuenta? <button type="button" class="inline-link" (click)="setMode('login')">Inicia sesion</button>
+        }
+      </p>
+    </section>
+  </main>
+</div>

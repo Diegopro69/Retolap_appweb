@@ -1,0 +1,1530 @@
+<div
+  class="student-dashboard-root"
+  (window:keydown)="onWindowKeydown($event)"
+  (window:resize)="onWindowResize()"
+  style="display: flex; min-height: 100vh; background-color: #f8fafc; font-family: Inter, sans-serif"
+>
+  @if (showDesktopSidebar) {
+  <div style="width: 240px; flex-shrink: 0">
+    <div
+      style="
+        width: 240px;
+        background-color: #0f172a;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 40;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+      "
+    >
+      <div style="padding: 24px 20px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.06)">
+        <button
+          style="display: flex; align-items: center; gap: 10px; background: none; border: none; cursor: pointer"
+          (click)="goHome()"
+        >
+          <div
+            style="
+              width: 32px;
+              height: 32px;
+              border-radius: 9px;
+              background: linear-gradient(135deg, #1e40af, #0f172a);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border: 1px solid rgba(255, 255, 255, 0.1);
+            "
+          >
+            <app-lucide-icon name="Zap" [size]="16" color="#00C9A7" fill="#00C9A7"></app-lucide-icon>
+          </div>
+          <span style="font-weight: 700; font-size: 17px; color: #fff">
+            Reto<span style="color: #00c9a7">Lab</span>
+          </span>
+        </button>
+      </div>
+
+      <div
+        style="
+          padding: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        "
+      >
+        <div
+          style="
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00c9a7, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+          "
+        >
+          {{ currentUserInitials }}
+        </div>
+        <div>
+          <div style="color: #fff; font-size: 13px; font-weight: 600">{{ currentUserName }}</div>
+          <div style="color: #475569; font-size: 11px">Perfil estudiante</div>
+        </div>
+        <div
+          style="
+            margin-left: auto;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #00c9a7;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px #00c9a7;
+          "
+        ></div>
+      </div>
+
+      <nav style="padding: 12px 10px; flex: 1">
+        @for (item of navItems; track item.path) {
+        <button
+          (click)="setActiveNav(item.path)"
+          [style.background]="
+            activeNav === item.path
+              ? 'linear-gradient(135deg, rgba(0, 201, 167, 0.15), rgba(99, 102, 241, 0.1))'
+              : 'transparent'
+          "
+          [style.color]="activeNav === item.path ? '#00C9A7' : '#64748B'"
+          [style.font-weight]="activeNav === item.path ? '600' : '400'"
+          [style.border-left]="activeNav === item.path ? '2px solid #00C9A7' : '2px solid transparent'"
+          style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-top: none;
+            border-right: none;
+            border-bottom: none;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            text-align: left;
+            transition: all 0.15s;
+          "
+        >
+          <app-lucide-icon [name]="item.icon" [size]="17"></app-lucide-icon>
+          {{ item.label }}
+          @if (item.path === 'postulaciones') {
+          <span
+            style="
+              margin-left: auto;
+              background-color: #00c9a7;
+              color: #0f172a;
+              font-size: 10px;
+              font-weight: 700;
+              border-radius: 100px;
+              padding: 1px 7px;
+            "
+            >2</span
+          >
+          }
+        </button>
+        }
+      </nav>
+
+      <div
+        style="
+          margin: 0 12px 20px;
+          background-color: rgba(0, 201, 167, 0.08);
+          border: 1px solid rgba(0, 201, 167, 0.2);
+          border-radius: 12px;
+          padding: 14px;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px">
+          <app-lucide-icon name="Award" [size]="15" color="#00C9A7"></app-lucide-icon>
+          <span style="color: #00c9a7; font-size: 12px; font-weight: 600">Tu progreso</span>
+        </div>
+        <div style="color: #94a3b8; font-size: 12px; margin-bottom: 10px">
+          3 retos completados - Nivel Intermedio
+        </div>
+        <div
+          style="
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 100px;
+            overflow: hidden;
+          "
+        >
+          <div
+            style="
+              height: 100%;
+              width: 60%;
+              background: linear-gradient(90deg, #00c9a7, #6366f1);
+              border-radius: 100px;
+            "
+          ></div>
+        </div>
+        <div style="color: #475569; font-size: 11px; margin-top: 6px">60% hacia Avanzado</div>
+
+        <button
+          (click)="logout()"
+          style="
+            margin-top: 12px;
+            width: 100%;
+            padding: 9px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: transparent;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+          "
+        >
+          <app-lucide-icon name="LogOut" [size]="14"></app-lucide-icon>
+          Cerrar sesion
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  @if (showMobileSidebar) {
+  <div style="position: fixed; inset: 0; z-index: 50; display: flex">
+    <div
+      style="position: absolute; inset: 0; background-color: rgba(0, 0, 0, 0.5)"
+      (click)="closeSidebar()"
+    ></div>
+    <div
+      style="
+        position: relative;
+        width: 260px;
+        z-index: 60;
+        background-color: #0f172a;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      "
+    >
+      <button
+        style="
+          position: absolute;
+          top: 16px;
+          right: -44px;
+          background: rgba(0, 0, 0, 0.5);
+          border: none;
+          border-radius: 8px;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        "
+        (click)="closeSidebar()"
+      >
+        <app-lucide-icon name="X" [size]="18" color="#fff"></app-lucide-icon>
+      </button>
+
+      <div
+        style="
+          padding: 24px 20px 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          margin-bottom: 0;
+        "
+      >
+        <button
+          style="display: flex; align-items: center; gap: 10px; background: none; border: none; cursor: pointer"
+          (click)="goHome(); closeSidebar()"
+        >
+          <div
+            style="
+              width: 32px;
+              height: 32px;
+              border-radius: 9px;
+              background: linear-gradient(135deg, #1e40af, #0f172a);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border: 1px solid rgba(255, 255, 255, 0.1);
+            "
+          >
+            <app-lucide-icon name="Zap" [size]="16" color="#00C9A7" fill="#00C9A7"></app-lucide-icon>
+          </div>
+          <span style="font-weight: 700; font-size: 17px; color: #fff"
+            >Reto<span style="color: #00c9a7">Lab</span></span
+          >
+        </button>
+      </div>
+
+      <div
+        style="
+          padding: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        "
+      >
+        <div
+          style="
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00c9a7, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+          "
+        >
+          {{ currentUserInitials }}
+        </div>
+        <div>
+          <div style="color: #fff; font-size: 13px; font-weight: 600">{{ currentUserName }}</div>
+          <div style="color: #475569; font-size: 11px">Perfil estudiante</div>
+        </div>
+      </div>
+
+      <nav style="padding: 12px 10px; flex: 1">
+        @for (item of navItems; track item.path) {
+        <button
+          (click)="setActiveNav(item.path)"
+          [style.background]="
+            activeNav === item.path
+              ? 'linear-gradient(135deg, rgba(0, 201, 167, 0.15), rgba(99, 102, 241, 0.1))'
+              : 'transparent'
+          "
+          [style.color]="activeNav === item.path ? '#00C9A7' : '#64748B'"
+          [style.font-weight]="activeNav === item.path ? '600' : '400'"
+          [style.border-left]="activeNav === item.path ? '2px solid #00C9A7' : '2px solid transparent'"
+          style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-top: none;
+            border-right: none;
+            border-bottom: none;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            text-align: left;
+            transition: all 0.15s;
+          "
+        >
+          <app-lucide-icon [name]="item.icon" [size]="17"></app-lucide-icon>
+          {{ item.label }}
+        </button>
+        }
+      </nav>
+
+      <div style="padding: 0 12px 20px">
+        <button
+          (click)="logout()"
+          style="
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+          "
+        >
+          <app-lucide-icon name="LogOut" [size]="16"></app-lucide-icon>
+          Cerrar sesion
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <div style="flex: 1; min-width: 0">
+    <div
+      [style.z-index]="showMobileSidebar ? '90' : '30'"
+      style="
+        background-color: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0 24px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+      "
+    >
+      <div class="flex items-center gap-4">
+        <button
+          style="background: none; border: none; cursor: pointer; display: flex; align-items: center"
+          (click)="toggleSidebar()"
+        >
+          @if (isMobileView && showMobileSidebar) {
+          <app-lucide-icon name="X" [size]="22" color="#0F172A"></app-lucide-icon>
+          } @else {
+          <app-lucide-icon name="Menu" [size]="22" color="#0F172A"></app-lucide-icon>
+          }
+        </button>
+
+        <div style="position: relative">
+          <app-lucide-icon
+            name="Search"
+            [size]="16"
+            color="#94A3B8"
+            style="position: absolute; top: 50%; left: 12px; transform: translateY(-50%)"
+          ></app-lucide-icon>
+          <input
+            type="text"
+            placeholder="Buscar retos, empresas..."
+            [value]="searchQuery"
+            (input)="updateSearch($event)"
+            style="
+              padding-left: 36px;
+              padding-right: 16px;
+              padding-top: 9px;
+              padding-bottom: 9px;
+              border-radius: 10px;
+              border: 1px solid #e2e8f0;
+              background-color: #f8fafc;
+              font-size: 14px;
+              color: #0f172a;
+              outline: none;
+              width: clamp(160px, 30vw, 280px);
+            "
+          />
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button
+          type="button"
+          aria-label="Abrir notificaciones"
+          (click)="toggleNotificationsPanel()"
+          class="topbar-icon-button"
+          [class.is-open]="notificationsOpen"
+        >
+          <app-lucide-icon name="Bell" [size]="17" color="#64748B"></app-lucide-icon>
+          @if (hasUnreadNotifications) {
+          <span class="notification-badge">
+            {{ unreadNotificationsCount }}
+          </span>
+          }
+        </button>
+
+        <button
+          type="button"
+          aria-label="Abrir menu de perfil"
+          (click)="toggleProfileMenu()"
+          class="topbar-avatar-button"
+          [class.is-open]="profileMenuOpen"
+        >
+          {{ currentUserInitials }}
+        </button>
+
+        @if (notificationsOpen) {
+        <div class="floating-panel notifications-panel">
+          <div class="panel-header">
+            <div class="panel-header-main">
+              <div class="panel-title">Notificaciones</div>
+              <div class="panel-subtitle">{{ unreadNotificationsCount }} sin leer</div>
+            </div>
+            <button
+              type="button"
+              (click)="markAllNotificationsAsRead()"
+              [disabled]="allNotificationsRead"
+              class="panel-action"
+            >
+              Marcar todo
+            </button>
+          </div>
+
+          @if (sortedNotifications.length === 0) {
+          <div class="panel-empty">
+            <app-lucide-icon name="Bell" [size]="18" color="#94A3B8"></app-lucide-icon>
+            Sin notificaciones por ahora
+          </div>
+          } @else {
+          <div class="notifications-list">
+          @for (notification of sortedNotifications; track notification.id) {
+          <button
+            type="button"
+            (click)="openNotification(notification.id)"
+            class="notification-item"
+            [class.is-read]="notification.read"
+          >
+            <div
+              class="notification-dot"
+              [class.is-read]="notification.read"
+            ></div>
+            <div class="notification-content">
+              <div class="notification-title">
+                {{ notification.title }}
+              </div>
+              <div class="notification-description">{{ notification.description }}</div>
+              <div class="notification-meta">
+                <span>{{ notification.time }}</span>
+                <app-lucide-icon name="ChevronRight" [size]="13" color="#94A3B8"></app-lucide-icon>
+              </div>
+            </div>
+          </button>
+          }
+          </div>
+          }
+        </div>
+        }
+
+        @if (profileMenuOpen) {
+        <div class="floating-panel profile-menu-panel">
+          <div class="profile-menu-header">
+            <div class="profile-menu-name">{{ currentUserName }}</div>
+            <div class="profile-menu-email">{{ currentUserEmail }}</div>
+            <div class="profile-menu-progress-track">
+              <div class="profile-menu-progress-fill" [style.width.%]="profileCompletionPercent"></div>
+            </div>
+            <div class="profile-menu-progress-text">Perfil {{ profileCompletionPercent }}% completo</div>
+          </div>
+
+          <button
+            type="button"
+            (click)="setActiveNav('perfil')"
+            class="profile-menu-item"
+          >
+            <app-lucide-icon name="User" [size]="15"></app-lucide-icon>
+            Ver perfil
+          </button>
+
+          <button
+            type="button"
+            (click)="setActiveNav('postulaciones')"
+            class="profile-menu-item"
+          >
+            <app-lucide-icon name="FileText" [size]="15"></app-lucide-icon>
+            Mis postulaciones
+          </button>
+
+          <button
+            type="button"
+            (click)="logout()"
+            class="profile-menu-item danger"
+          >
+            <app-lucide-icon name="LogOut" [size]="15" color="#EF4444"></app-lucide-icon>
+            Cerrar sesion
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+
+    @if (notificationsOpen || profileMenuOpen) {
+    <button
+      type="button"
+      (click)="closeFloatingPanels()"
+      style="
+        position: fixed;
+        inset: 0;
+        background: transparent;
+        border: none;
+        z-index: 25;
+      "
+      aria-label="Cerrar paneles"
+    ></button>
+    }
+
+    <div style="padding: 24px">
+      @if (activeNav === 'inicio') {
+      <div>
+        <div
+          style="
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+          "
+        >
+          <div
+            style="
+              position: absolute;
+              right: 0;
+              top: 0;
+              bottom: 0;
+              width: 300px;
+              background: radial-gradient(circle at right, rgba(0, 201, 167, 0.1), transparent 70%);
+              pointer-events: none;
+            "
+          ></div>
+          <div style="color: #94a3b8; font-size: 13px; margin-bottom: 6px">Bienvenida de vuelta</div>
+          <h1
+            style="
+              color: #fff;
+              font-size: 26px;
+              font-weight: 800;
+              letter-spacing: -0.5px;
+              margin-bottom: 8px;
+            "
+          >
+            Hola, {{ currentUserName }}
+          </h1>
+          <p style="color: #64748b; font-size: 14px; margin-bottom: 20px">
+            Tienes <span style="color: #00c9a7; font-weight: 600">6 retos nuevos</span> disponibles que coinciden
+            con tu perfil.
+          </p>
+          <button
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 10px 20px;
+              border-radius: 8px;
+              border: none;
+              background: linear-gradient(135deg, #00c9a7, #00a88e);
+              color: #0f172a;
+              font-weight: 700;
+              font-size: 14px;
+              cursor: pointer;
+            "
+            (click)="setActiveNav('retos')"
+          >
+            Explorar retos
+            <app-lucide-icon name="ChevronRight" [size]="16"></app-lucide-icon>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          @for (stat of quickStats; track stat.label) {
+          <div style="background-color: #fff; border-radius: 12px; padding: 18px 16px; border: 1px solid #e2e8f0">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+              <div
+                [style.background-color]="stat.color + '15'"
+                style="
+                  width: 34px;
+                  height: 34px;
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <app-lucide-icon [name]="stat.icon" [size]="16" [color]="stat.color"></app-lucide-icon>
+              </div>
+            </div>
+            <div style="font-size: 24px; font-weight: 800; color: #0f172a">{{ stat.value }}</div>
+            <div style="font-size: 12px; color: #94a3b8">{{ stat.label }}</div>
+          </div>
+          }
+        </div>
+
+        <div>
+          <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 14px">
+            Mis postulaciones recientes
+          </h2>
+          @for (app of myApplications; track app.id) {
+          <div
+            style="
+              background-color: #fff;
+              border-radius: 12px;
+              padding: 18px 20px;
+              border: 1px solid #e2e8f0;
+              margin-bottom: 10px;
+              display: flex;
+              align-items: center;
+              gap: 14px;
+            "
+          >
+            <div style="flex: 1; min-width: 0">
+              <div style="font-size: 14px; font-weight: 600; color: #0f172a; margin-bottom: 3px">{{ app.title }}</div>
+              <div style="font-size: 12px; color: #94a3b8">{{ app.company }} - Enviado {{ app.submittedAt }}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0">
+              <span
+                [style.color]="app.statusColor"
+                [style.background-color]="app.statusBg"
+                style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px"
+              >
+                {{ app.status }}
+              </span>
+              <span style="font-size: 14px; font-weight: 700; color: #0f172a">{{ app.reward }}</span>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      @if (activeNav === 'retos') {
+      <div>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 style="font-size: clamp(20px, 3vw, 28px); font-weight: 800; color: #0f172a; letter-spacing: -0.5px">
+              Retos disponibles
+            </h1>
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 4px">
+              {{ filteredChallenges.length }} retos encontrados
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <select
+              [value]="selectedSort"
+              (change)="updateSort($event)"
+              style="
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                background-color: #fff;
+                font-size: 13px;
+                color: #475569;
+                cursor: pointer;
+                outline: none;
+              "
+            >
+              @for (option of sortOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div
+          style="
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 16px 18px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+          "
+        >
+          <div class="flex flex-col md:flex-row gap-4">
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: #94a3b8;
+                  text-transform: uppercase;
+                  margin-bottom: 8px;
+                  letter-spacing: 0.06em;
+                "
+              >
+                Industria
+              </div>
+              <div class="flex flex-wrap gap-2">
+                @for (industry of industries; track industry) {
+                <button
+                  (click)="setIndustry(industry)"
+                  [style.border]="
+                    selectedIndustry === industry ? '1px solid #00C9A7' : '1px solid #E2E8F0'
+                  "
+                  [style.background-color]="selectedIndustry === industry ? '#F0FDF9' : '#F8FAFC'"
+                  [style.color]="selectedIndustry === industry ? '#00C9A7' : '#64748B'"
+                  [style.font-weight]="selectedIndustry === industry ? '600' : '400'"
+                  style="
+                    padding: 5px 12px;
+                    border-radius: 100px;
+                    font-size: 12px;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                  "
+                >
+                  {{ industry }}
+                </button>
+                }
+              </div>
+            </div>
+
+            <div style="border-left: 1px solid #e2e8f0" class="hidden md:block"></div>
+
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: #94a3b8;
+                  text-transform: uppercase;
+                  margin-bottom: 8px;
+                  letter-spacing: 0.06em;
+                "
+              >
+                Nivel
+              </div>
+              <div class="flex flex-wrap gap-2">
+                @for (level of levels; track level) {
+                <button
+                  (click)="setLevel(level)"
+                  [style.border]="selectedLevel === level ? '1px solid #6366F1' : '1px solid #E2E8F0'"
+                  [style.background-color]="selectedLevel === level ? '#EEF2FF' : '#F8FAFC'"
+                  [style.color]="selectedLevel === level ? '#6366F1' : '#64748B'"
+                  [style.font-weight]="selectedLevel === level ? '600' : '400'"
+                  style="
+                    padding: 5px 12px;
+                    border-radius: 100px;
+                    font-size: 12px;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                  "
+                >
+                  {{ level }}
+                </button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          @for (challenge of filteredChallenges; track challenge.id) {
+          <div
+            style="
+              background-color: #fff;
+              border-radius: 14px;
+              padding: 22px;
+              border: 1px solid #e2e8f0;
+              display: flex;
+              flex-direction: column;
+              gap: 14px;
+            "
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div
+                [style.background]="challenge.color + '18'"
+                [style.border]="'1px solid ' + challenge.color + '35'"
+                style="
+                  width: 46px;
+                  height: 46px;
+                  border-radius: 12px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                "
+              >
+                <app-lucide-icon
+                  [name]="challenge.icon"
+                  [size]="22"
+                  [color]="challenge.color"
+                ></app-lucide-icon>
+              </div>
+              <button
+                (click)="toggleSave(challenge.id)"
+                style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 6px"
+              >
+                <app-lucide-icon
+                  name="Bookmark"
+                  [size]="17"
+                  [color]="savedIds.includes(challenge.id) ? '#F59E0B' : '#CBD5E1'"
+                  [fill]="savedIds.includes(challenge.id) ? '#F59E0B' : 'none'"
+                ></app-lucide-icon>
+              </button>
+            </div>
+
+            <div>
+              <div
+                style="
+                  font-size: 11px;
+                  color: #94a3b8;
+                  font-weight: 500;
+                  text-transform: uppercase;
+                  letter-spacing: 0.06em;
+                  margin-bottom: 5px;
+                "
+              >
+                {{ challenge.industry }}
+              </div>
+              <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.4; margin-bottom: 6px">
+                {{ challenge.title }}
+              </h3>
+              <p style="font-size: 13px; color: #64748b; line-height: 1.55">{{ challenge.description }}</p>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5">
+              @for (tag of challenge.tags; track tag) {
+              <span
+                style="
+                  font-size: 11px;
+                  padding: 3px 9px;
+                  border-radius: 100px;
+                  background-color: #f1f5f9;
+                  color: #475569;
+                  font-weight: 500;
+                "
+              >
+                {{ tag }}
+              </span>
+              }
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap">
+              <div style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #64748b">
+                <app-lucide-icon name="Clock" [size]="12"></app-lucide-icon>
+                {{ challenge.deadline }}
+              </div>
+              <div style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #64748b">
+                <app-lucide-icon name="User" [size]="12"></app-lucide-icon>
+                {{ challenge.applicants }} postulantes
+              </div>
+              <span
+                style="font-size: 11px; padding: 2px 8px; border-radius: 100px; font-weight: 500"
+                [style.background-color]="
+                  challenge.level === 'Avanzado'
+                    ? '#FEF3C7'
+                    : challenge.level === 'Intermedio'
+                      ? '#EDE9FE'
+                      : '#F0FDF4'
+                "
+                [style.color]="
+                  challenge.level === 'Avanzado'
+                    ? '#D97706'
+                    : challenge.level === 'Intermedio'
+                      ? '#7C3AED'
+                      : '#16A34A'
+                "
+              >
+                {{ challenge.level }}
+              </span>
+            </div>
+
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-top: 12px;
+                border-top: 1px solid #f1f5f9;
+              "
+            >
+              <div>
+                <div style="font-size: 11px; color: #94a3b8">Empresa</div>
+                <div style="font-size: 13px; font-weight: 600; color: #334155">{{ challenge.company }}</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div style="text-align: right">
+                  <div style="font-size: 11px; color: #94a3b8">Recompensa</div>
+                  <div style="font-size: 20px; font-weight: 800" [style.color]="challenge.color">
+                    {{ challenge.reward }}
+                  </div>
+                </div>
+                <button
+                  style="
+                    padding: 9px 16px;
+                    border-radius: 8px;
+                    border: none;
+                    background: linear-gradient(135deg, #0f172a, #1e293b);
+                    color: #fff;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    white-space: nowrap;
+                  "
+                >
+                  Postularme
+                  <app-lucide-icon name="ArrowUpRight" [size]="14"></app-lucide-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+
+        @if (filteredChallenges.length === 0) {
+        <div style="text-align: center; padding: 60px 20px; color: #94a3b8">
+          <app-lucide-icon name="Target" [size]="40" color="#E2E8F0"></app-lucide-icon>
+          <p style="font-size: 16px; font-weight: 600; color: #64748b; margin-top: 12px">No se encontraron retos</p>
+          <p style="font-size: 14px">Prueba con otros filtros</p>
+        </div>
+        }
+      </div>
+      }
+
+      @if (activeNav === 'postulaciones') {
+      <div>
+        <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 6px">
+          Mis postulaciones
+        </h1>
+        <p style="color: #94a3b8; font-size: 14px; margin-bottom: 24px">Seguimiento de tus candidaturas activas</p>
+
+        @for (app of myApplications; track app.id) {
+        <div
+          style="
+            background-color: #fff;
+            border-radius: 14px;
+            padding: 20px 24px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+          "
+        >
+          <div
+            style="
+              width: 44px;
+              height: 44px;
+              border-radius: 12px;
+              background: linear-gradient(135deg, #0f172a, #1e293b);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 16px;
+              font-weight: 700;
+              color: #fff;
+              flex-shrink: 0;
+            "
+          >
+            {{ app.company.charAt(0) }}
+          </div>
+          <div style="flex: 1; min-width: 0">
+            <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 3px">{{ app.title }}</div>
+            <div style="font-size: 13px; color: #94a3b8">{{ app.company }} - Enviado {{ app.submittedAt }}</div>
+          </div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <span
+              [style.color]="app.statusColor"
+              [style.background-color]="app.statusBg"
+              style="font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 100px"
+            >
+              {{ app.status }}
+            </span>
+            <span style="font-size: 17px; font-weight: 800; color: #0f172a">{{ app.reward }}</span>
+            <button
+              (click)="openApplicationDetails(app.id)"
+              style="
+                padding: 8px 14px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                color: #475569;
+                font-size: 13px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+            >
+              Ver detalles
+              <app-lucide-icon name="ChevronRight" [size]="14"></app-lucide-icon>
+            </button>
+          </div>
+        </div>
+        }
+
+        <div
+          style="
+            background-color: #f8fafc;
+            border-radius: 14px;
+            border: 2px dashed #e2e8f0;
+            padding: 32px;
+            text-align: center;
+            margin-top: 8px;
+          "
+        >
+          <app-lucide-icon name="Target" [size]="32" color="#CBD5E1"></app-lucide-icon>
+          <p style="color: #64748b; font-size: 14px; font-weight: 600; margin: 12px 0 8px">
+            Explora mas retos para postularte
+          </p>
+          <button
+            style="
+              padding: 9px 20px;
+              border-radius: 8px;
+              border: none;
+              background: #0f172a;
+              color: #fff;
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+            (click)="setActiveNav('retos')"
+          >
+            Ver retos disponibles
+          </button>
+        </div>
+      </div>
+      }
+
+      @if (activeNav === 'perfil') {
+      <div class="max-w-2xl">
+        <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 24px">
+          Mi perfil
+        </h1>
+
+        <div
+          style="
+            background-color: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+          "
+        >
+          <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+            <div class="flex items-center gap-5">
+              <div
+                style="
+                  width: 72px;
+                  height: 72px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #00c9a7, #6366f1);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 24px;
+                  font-weight: 800;
+                  color: #fff;
+                "
+              >
+                {{ currentUserInitials }}
+              </div>
+              <div>
+                <h2 style="font-size: 20px; font-weight: 700; color: #0f172a">{{ currentUserName }}</h2>
+                <p style="color: #64748b; font-size: 14px">{{ profileSubtitle }}</p>
+                <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px">
+                  @for (s of [1, 2, 3, 4, 5]; track s) {
+                  <app-lucide-icon
+                    name="Star"
+                    [size]="13"
+                    color="#F59E0B"
+                    [fill]="s <= 4 ? '#F59E0B' : 'none'"
+                  ></app-lucide-icon>
+                  }
+                  <span style="font-size: 12px; color: #94a3b8; margin-left: 4px">4.0 (3 retos)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              @if (!isEditingProfile) {
+              <button
+                (click)="startProfileEdit()"
+                style="
+                  padding: 8px 14px;
+                  border-radius: 8px;
+                  border: 1px solid #e2e8f0;
+                  background: #fff;
+                  color: #334155;
+                  font-size: 13px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Editar perfil
+              </button>
+              } @else {
+              <button
+                (click)="cancelProfileEdit()"
+                style="
+                  padding: 8px 14px;
+                  border-radius: 8px;
+                  border: 1px solid #e2e8f0;
+                  background: #fff;
+                  color: #334155;
+                  font-size: 13px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Cancelar
+              </button>
+              <button
+                (click)="saveProfileEdit()"
+                style="
+                  padding: 8px 14px;
+                  border-radius: 8px;
+                  border: none;
+                  background: linear-gradient(135deg, #0f172a, #1e293b);
+                  color: #fff;
+                  font-size: 13px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Guardar cambios
+              </button>
+              }
+            </div>
+          </div>
+
+          <div
+            style="
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              background: #f8fafc;
+              padding: 12px 14px;
+              margin-bottom: 16px;
+            "
+          >
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+              <span style="font-size: 12px; color: #475569; font-weight: 600">Perfil completado</span>
+              <span style="font-size: 12px; color: #0f172a; font-weight: 700">{{ profileCompletionPercent }}%</span>
+            </div>
+            <div
+              style="
+                height: 7px;
+                border-radius: 999px;
+                background: #e2e8f0;
+                overflow: hidden;
+              "
+            >
+              <div
+                [style.width.%]="profileCompletionPercent"
+                style="height: 100%; background: linear-gradient(90deg, #00c9a7, #6366f1)"
+              ></div>
+            </div>
+          </div>
+
+          @if (profileFeedback) {
+          <div
+            [style.border]="profileFeedback.includes('correctamente') ? '1px solid #86EFAC' : '1px solid #FECACA'"
+            [style.background-color]="profileFeedback.includes('correctamente') ? '#F0FDF4' : '#FEF2F2'"
+            [style.color]="profileFeedback.includes('correctamente') ? '#15803D' : '#B91C1C'"
+            style="
+              border-radius: 10px;
+              padding: 10px 12px;
+              font-size: 13px;
+              margin-bottom: 14px;
+            "
+          >
+            {{ profileFeedback }}
+          </div>
+          }
+
+          @if (isEditingProfile) {
+          <div style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 14px">
+            <label style="font-size: 12px; font-weight: 600; color: #475569">
+              Universidad
+              <input
+                [value]="profileDraft.university"
+                (input)="updateProfileDraftField('university', $event)"
+                style="
+                  width: 100%;
+                  margin-top: 5px;
+                  padding: 9px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #e2e8f0;
+                  background: #fff;
+                  color: #0f172a;
+                  font-size: 14px;
+                  box-sizing: border-box;
+                "
+              />
+            </label>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <label style="font-size: 12px; font-weight: 600; color: #475569">
+                Carrera
+                <input
+                  [value]="profileDraft.major"
+                  (input)="updateProfileDraftField('major', $event)"
+                  style="
+                    width: 100%;
+                    margin-top: 5px;
+                    padding: 9px 12px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                    background: #fff;
+                    color: #0f172a;
+                    font-size: 14px;
+                    box-sizing: border-box;
+                  "
+                />
+              </label>
+
+              <label style="font-size: 12px; font-weight: 600; color: #475569">
+                Semestre
+                <input
+                  [value]="profileDraft.semester"
+                  (input)="updateProfileDraftField('semester', $event)"
+                  style="
+                    width: 100%;
+                    margin-top: 5px;
+                    padding: 9px 12px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                    background: #fff;
+                    color: #0f172a;
+                    font-size: 14px;
+                    box-sizing: border-box;
+                  "
+                />
+              </label>
+            </div>
+
+            <label style="font-size: 12px; font-weight: 600; color: #475569">
+              Ciudad
+              <input
+                [value]="profileDraft.city"
+                (input)="updateProfileDraftField('city', $event)"
+                style="
+                  width: 100%;
+                  margin-top: 5px;
+                  padding: 9px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #e2e8f0;
+                  background: #fff;
+                  color: #0f172a;
+                  font-size: 14px;
+                  box-sizing: border-box;
+                "
+              />
+            </label>
+
+            <label style="font-size: 12px; font-weight: 600; color: #475569">
+              Bio profesional
+              <textarea
+                rows="4"
+                [value]="profileDraft.bio"
+                (input)="updateProfileDraftField('bio', $event)"
+                style="
+                  width: 100%;
+                  margin-top: 5px;
+                  padding: 10px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #e2e8f0;
+                  background: #fff;
+                  color: #0f172a;
+                  font-size: 14px;
+                  box-sizing: border-box;
+                  resize: vertical;
+                  font-family: Inter, sans-serif;
+                "
+              ></textarea>
+            </label>
+          </div>
+          } @else {
+          @for (field of profileFields; track field.label; let isLast = $last) {
+          <div
+            [style.border-bottom]="isLast ? 'none' : '1px solid #F1F5F9'"
+            [style.padding-bottom]="isLast ? '0' : '14px'"
+            [style.margin-bottom]="isLast ? '0' : '14px'"
+          >
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 3px">{{ field.label }}</div>
+            <div style="font-size: 15px; color: #0f172a; font-weight: 500">{{ field.value }}</div>
+          </div>
+          }
+
+          <div
+            style="
+              margin-top: 16px;
+              border-top: 1px solid #f1f5f9;
+              padding-top: 16px;
+            "
+          >
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px">Bio profesional</div>
+            <p style="font-size: 14px; color: #334155; line-height: 1.65; margin: 0">{{ profile.bio }}</p>
+          </div>
+
+          <div
+            style="
+              margin-top: 16px;
+              border-top: 1px solid #f1f5f9;
+              padding-top: 16px;
+            "
+          >
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px">Habilidades destacadas</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              @for (skill of profile.skills; track skill) {
+              <span
+                style="
+                  font-size: 12px;
+                  padding: 5px 10px;
+                  border-radius: 100px;
+                  border: 1px solid #dbeafe;
+                  background: #eff6ff;
+                  color: #1d4ed8;
+                  font-weight: 600;
+                "
+              >
+                {{ skill }}
+              </span>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      @if (showApplicationDetails && selectedApplication) {
+      <div
+        style="
+          position: fixed;
+          inset: 0;
+          z-index: 110;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+        "
+      >
+        <div
+          style="
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.48);
+          "
+          (click)="closeApplicationDetails()"
+        ></div>
+
+        <div
+          style="
+            position: relative;
+            z-index: 2;
+            width: min(92vw, 640px);
+            max-height: 88vh;
+            overflow: auto;
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 24px 40px rgba(15, 23, 42, 0.2);
+          "
+        >
+          <div
+            style="
+              padding: 18px 20px;
+              border-bottom: 1px solid #f1f5f9;
+              display: flex;
+              align-items: flex-start;
+              justify-content: space-between;
+              gap: 12px;
+            "
+          >
+            <div>
+              <div style="font-size: 13px; color: #64748b; margin-bottom: 2px">Detalle de postulacion</div>
+              <h3 style="font-size: 18px; color: #0f172a; font-weight: 800; margin: 0">
+                {{ selectedApplication.title }}
+              </h3>
+              <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 0">
+                {{ selectedApplication.company }} - Enviado {{ selectedApplication.submittedAt }}
+              </p>
+            </div>
+
+            <button
+              (click)="closeApplicationDetails()"
+              style="
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                border-radius: 8px;
+                width: 34px;
+                height: 34px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              <app-lucide-icon name="X" [size]="16" color="#64748B"></app-lucide-icon>
+            </button>
+          </div>
+
+          <div style="padding: 20px">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px">
+              <span
+                [style.color]="selectedApplication.statusColor"
+                [style.background-color]="selectedApplication.statusBg"
+                style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 100px"
+              >
+                {{ selectedApplication.status }}
+              </span>
+              <span style="font-size: 12px; color: #94a3b8">Recompensa</span>
+              <span style="font-size: 16px; color: #0f172a; font-weight: 800">{{ selectedApplication.reward }}</span>
+            </div>
+
+            <div style="margin-bottom: 14px">
+              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px">Resumen enviado</div>
+              <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6">{{ selectedApplication.summary }}</p>
+            </div>
+
+            <div style="margin-bottom: 14px">
+              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px">Enfoque principal</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 7px">
+                @for (tag of selectedApplication.focus; track tag) {
+                <span
+                  style="
+                    font-size: 12px;
+                    padding: 4px 10px;
+                    border-radius: 100px;
+                    background: #f1f5f9;
+                    color: #475569;
+                    font-weight: 600;
+                  "
+                >
+                  {{ tag }}
+                </span>
+                }
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10" style="margin-bottom: 14px">
+              <div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px">Fecha de envio</div>
+                <div style="font-size: 14px; color: #0f172a; font-weight: 600">{{ selectedApplication.submittedDate }}</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px">Siguiente paso</div>
+                <div style="font-size: 14px; color: #0f172a; font-weight: 600">{{ selectedApplication.nextStep }}</div>
+              </div>
+            </div>
+
+            <div
+              style="
+                border: 1px solid #dbeafe;
+                border-radius: 12px;
+                padding: 12px 14px;
+                background: #eff6ff;
+              "
+            >
+              <div style="font-size: 12px; font-weight: 700; color: #1d4ed8; margin-bottom: 5px">Feedback de la empresa</div>
+              <p style="margin: 0; color: #1e3a8a; font-size: 13px; line-height: 1.55">{{ selectedApplication.companyFeedback }}</p>
+            </div>
+
+            <div style="margin-top: 18px; display: flex; justify-content: flex-end">
+              <button
+                (click)="closeApplicationDetails()"
+                style="
+                  padding: 9px 16px;
+                  border-radius: 8px;
+                  border: none;
+                  background: #0f172a;
+                  color: #fff;
+                  font-size: 13px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Cerrar detalle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+</div>
