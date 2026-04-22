@@ -381,7 +381,9 @@
         "
       >
         <div>
-          <h2 style="font-size: 20px; font-weight: 800; color: #0f172a">Crear nuevo reto</h2>
+          <h2 style="font-size: 20px; font-weight: 800; color: #0f172a">
+            {{ isEditingChallenge ? 'Editar reto' : 'Crear nuevo reto' }}
+          </h2>
           <p style="color: #94a3b8; font-size: 13px; margin-top: 2px">Paso {{ modalStep }} de 2</p>
         </div>
         <button
@@ -697,7 +699,7 @@
             gap: 6px;
           "
         >
-          {{ modalStep === 1 ? 'Continuar' : 'Publicar reto' }}
+          {{ modalStep === 1 ? 'Continuar' : (isEditingChallenge ? 'Guardar cambios' : 'Publicar reto') }}
           @if (modalStep === 1) {
           <app-lucide-icon name="ChevronRight" [size]="16"></app-lucide-icon>
           } @else {
@@ -878,6 +880,40 @@
     }
 
     <div style="padding: 24px">
+      @if (actionMessage) {
+      <div
+        style="
+          margin-bottom: 16px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid #bae6fd;
+          background-color: #f0f9ff;
+          color: #0c4a6e;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        "
+      >
+        <span>{{ actionMessage }}</span>
+        <button
+          type="button"
+          (click)="clearActionMessage()"
+          style="
+            border: none;
+            background: transparent;
+            color: #0369a1;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+          "
+        >
+          Cerrar
+        </button>
+      </div>
+      }
+
       @if (activeNav === 'dashboard') {
       <div>
         <div
@@ -1084,6 +1120,7 @@
                     {{ ch.status }}
                   </span>
                   <button
+                    (click)="editChallenge(ch.id)"
                     style="
                       background: none;
                       border: 1px solid #e2e8f0;
@@ -1210,10 +1247,13 @@
         >
           <div>
             <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px">Mis retos</h1>
-            <p style="color: #94a3b8; font-size: 14px; margin-top: 4px">{{ publishedChallenges.length }} retos publicados</p>
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 4px">
+              {{ displayedPublishedChallenges.length }} de {{ publishedChallenges.length }} retos visibles
+            </p>
           </div>
           <div class="flex items-center gap-3">
             <button
+              (click)="toggleQuickFilter()"
               style="
                 display: flex;
                 align-items: center;
@@ -1231,6 +1271,7 @@
               Filtrar
             </button>
             <button
+              (click)="exportChallenges()"
               style="
                 display: flex;
                 align-items: center;
@@ -1270,11 +1311,12 @@
         </div>
 
         <div class="flex gap-2 mb-5">
-          @for (tab of ['Todos', 'Abiertos', 'En revision', 'Cerrados']; track tab) {
+          @for (tab of challengeTabs; track tab) {
           <button
-            [style.background]="tab === 'Todos' ? '#0F172A' : '#fff'"
-            [style.color]="tab === 'Todos' ? '#fff' : '#64748B'"
-            [style.font-weight]="tab === 'Todos' ? '600' : '400'"
+            (click)="setChallengeTab(tab)"
+            [style.background]="tab === selectedChallengeTab ? '#0F172A' : '#fff'"
+            [style.color]="tab === selectedChallengeTab ? '#fff' : '#64748B'"
+            [style.font-weight]="tab === selectedChallengeTab ? '600' : '400'"
             style="
               padding: 7px 16px;
               border-radius: 8px;
@@ -1289,7 +1331,7 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 10px">
-          @for (ch of publishedChallenges; track ch.id) {
+          @for (ch of displayedPublishedChallenges; track ch.id) {
           <div
             style="
               background-color: #fff;
@@ -1370,6 +1412,7 @@
               </span>
               <div class="flex items-center gap-1.5">
                 <button
+                  (click)="editChallenge(ch.id)"
                   style="
                     background: #f8fafc;
                     border: 1px solid #e2e8f0;
@@ -1383,6 +1426,7 @@
                   <app-lucide-icon name="Edit2" [size]="13" color="#64748B"></app-lucide-icon>
                 </button>
                 <button
+                  (click)="deleteChallenge(ch.id)"
                   style="
                     background: #fef2f2;
                     border: 1px solid #fecaca;
@@ -1397,6 +1441,22 @@
                 </button>
               </div>
             </div>
+          </div>
+          }
+
+          @if (displayedPublishedChallenges.length === 0) {
+          <div
+            style="
+              background-color: #fff;
+              border-radius: 14px;
+              padding: 28px;
+              border: 1px dashed #cbd5e1;
+              text-align: center;
+              color: #64748b;
+              font-size: 14px;
+            "
+          >
+            No hay retos para el filtro actual.
           </div>
           }
         </div>
@@ -1440,6 +1500,7 @@
             </div>
             <div class="flex gap-2">
               <button
+                (click)="selectWinner(a)"
                 style="
                   flex: 1;
                   padding: 9px;
@@ -1455,6 +1516,7 @@
                 Seleccionar ganador
               </button>
               <button
+                (click)="viewProposal(a)"
                 style="
                   padding: 9px 14px;
                   border-radius: 8px;
@@ -1522,6 +1584,7 @@
             Graficas de analiticas disponibles en el plan Enterprise
           </p>
           <button
+            (click)="upgradePlan()"
             style="
               margin-top: 16px;
               padding: 10px 24px;
@@ -1562,6 +1625,7 @@
               <div style="font-size: 14px; font-weight: 600; color: #0f172a">{{ field.value }}</div>
             </div>
             <button
+              (click)="editConfigField(field.key)"
               style="
                 padding: 6px 14px;
                 border-radius: 7px;

@@ -4,6 +4,9 @@ import { LucideIconComponent } from '../../shared/lucide-icon/lucide-icon.compon
 import { AuthService } from '../../core/auth/auth.service';
 
 type CompanyNavPath = 'dashboard' | 'retos' | 'postulaciones' | 'analiticas' | 'config';
+type ChallengeStatus = 'Abierto' | 'En revision' | 'Cerrado';
+type ChallengeTab = 'Todos' | 'Abiertos' | 'En revision' | 'Cerrados';
+type ConfigFieldKey = 'companyName' | 'industry' | 'website' | 'plan' | 'contactEmail';
 
 interface CompanyNavItem {
   icon: string;
@@ -25,13 +28,16 @@ interface PublishedChallenge {
   title: string;
   industry: string;
   reward: string;
-  status: 'Abierto' | 'En revision' | 'Cerrado';
+  status: ChallengeStatus;
   applicants: number;
   deadline: string;
+  deadlineDate: string;
   published: string;
   icon: string;
   color: string;
   views: number;
+  description: string;
+  level: string;
   winner?: string;
 }
 
@@ -70,8 +76,17 @@ interface ChallengeForm {
 }
 
 interface BasicField {
+  key: ConfigFieldKey;
   label: string;
   value: string;
+}
+
+interface CompanySettings {
+  companyName: string;
+  industry: string;
+  website: string;
+  plan: string;
+  contactEmail: string;
 }
 
 @Component({
@@ -83,6 +98,10 @@ interface BasicField {
 })
 export class CompanyDashboardComponent {
   private readonly mobileBreakpoint = 768;
+  private readonly challengesStorageKey = 'retolab.company.challenges';
+  private readonly settingsStorageKey = 'retolab.company.settings';
+
+  readonly challengeTabs: ChallengeTab[] = ['Todos', 'Abiertos', 'En revision', 'Cerrados'];
 
   readonly companyNavItems: CompanyNavItem[] = [
     { icon: 'Home', label: 'Dashboard', path: 'dashboard' },
@@ -92,7 +111,7 @@ export class CompanyDashboardComponent {
     { icon: 'Settings', label: 'Configuracion', path: 'config' },
   ];
 
-  readonly publishedChallenges: PublishedChallenge[] = [
+  private readonly defaultPublishedChallenges: PublishedChallenge[] = [
     {
       id: 1,
       title: 'Estrategia de Growth Hacking para SaaS B2B',
@@ -101,10 +120,14 @@ export class CompanyDashboardComponent {
       status: 'Abierto',
       applicants: 34,
       deadline: '12 dias restantes',
+      deadlineDate: '2026-05-10',
       published: '15 feb 2026',
       icon: 'TrendingUp',
       color: '#00C9A7',
       views: 289,
+      description:
+        'Diseña una estrategia de crecimiento sostenible para una plataforma SaaS B2B en LATAM.',
+      level: 'Intermedio',
     },
     {
       id: 2,
@@ -114,10 +137,14 @@ export class CompanyDashboardComponent {
       status: 'En revision',
       applicants: 21,
       deadline: 'Cerrado',
+      deadlineDate: '2026-02-20',
       published: '8 feb 2026',
       icon: 'Sparkles',
       color: '#6366F1',
       views: 174,
+      description:
+        'Rediseña la experiencia de usuario de una app de pagos para mejorar activación y retención.',
+      level: 'Basico',
     },
     {
       id: 3,
@@ -127,10 +154,14 @@ export class CompanyDashboardComponent {
       status: 'Abierto',
       applicants: 12,
       deadline: '20 dias restantes',
+      deadlineDate: '2026-05-18',
       published: '20 feb 2026',
       icon: 'Globe',
       color: '#F59E0B',
       views: 96,
+      description:
+        'Construye un modelo de expansión logística para 5 países con enfoque operativo y financiero.',
+      level: 'Avanzado',
     },
     {
       id: 4,
@@ -140,10 +171,14 @@ export class CompanyDashboardComponent {
       status: 'Cerrado',
       applicants: 18,
       deadline: 'Finalizado',
+      deadlineDate: '2026-02-01',
       published: '1 feb 2026',
       icon: 'Code2',
       color: '#EC4899',
       views: 312,
+      description:
+        'Diseña un pipeline para integrar fuentes de datos y habilitar segmentación avanzada de clientes.',
+      level: 'Intermedio',
       winner: 'Laura Gomez',
     },
     {
@@ -154,13 +189,19 @@ export class CompanyDashboardComponent {
       status: 'Cerrado',
       applicants: 45,
       deadline: 'Finalizado',
+      deadlineDate: '2026-01-25',
       published: '25 ene 2026',
       icon: 'Briefcase',
       color: '#22C55E',
       views: 421,
+      description:
+        'Define calendario editorial y distribución para posicionar marca de consumo en audiencias jóvenes.',
+      level: 'Basico',
       winner: 'Carlos Ruiz',
     },
   ];
+
+  publishedChallenges: PublishedChallenge[] = [];
 
   readonly topApplicants: TopApplicant[] = [
     {
@@ -194,45 +235,6 @@ export class CompanyDashboardComponent {
       score: 8.2,
       avatar: 'AL',
       color: '#EC4899',
-    },
-  ];
-
-  readonly metrics: MetricItem[] = [
-    {
-      label: 'Retos activos',
-      value: '2',
-      change: '+1 este mes',
-      up: true,
-      color: '#00C9A7',
-      bg: '#F0FDF9',
-      icon: 'Target',
-    },
-    {
-      label: 'Postulaciones recibidas',
-      value: '130',
-      change: '+34 esta semana',
-      up: true,
-      color: '#6366F1',
-      bg: '#EEF2FF',
-      icon: 'Users',
-    },
-    {
-      label: 'Retos finalizados',
-      value: '2',
-      change: '2 ganadores elegidos',
-      up: null,
-      color: '#F59E0B',
-      bg: '#FFFBEB',
-      icon: 'CheckCircle2',
-    },
-    {
-      label: 'Inversion total',
-      value: '$6,100',
-      change: 'En recompensas pagadas',
-      up: null,
-      color: '#EC4899',
-      bg: '#FDF2F8',
-      icon: 'DollarSign',
     },
   ];
 
@@ -299,6 +301,14 @@ export class CompanyDashboardComponent {
     },
   ];
 
+  companySettings: CompanySettings = {
+    companyName: 'Mi empresa',
+    industry: 'Tecnologia / SaaS',
+    website: 'www.retocompany.com',
+    plan: 'Enterprise - Renovacion feb 2027',
+    contactEmail: 'contacto@retolab.app',
+  };
+
   activeNav: CompanyNavPath = 'dashboard';
   showCreateModal = false;
   sidebarOpen = false;
@@ -310,12 +320,16 @@ export class CompanyDashboardComponent {
 
   modalStep = 1;
   challengeForm: ChallengeForm = this.getEmptyChallengeForm();
+  selectedChallengeTab: ChallengeTab = 'Todos';
+  editingChallengeId: number | null = null;
+  actionMessage = '';
 
   constructor(
     private readonly router: Router,
     private readonly auth: AuthService,
   ) {
     this.updateViewportState();
+    this.hydrateLocalState();
   }
 
   get showDesktopSidebar(): boolean {
@@ -327,11 +341,11 @@ export class CompanyDashboardComponent {
   }
 
   get currentCompanyName(): string {
-    return this.auth.session()?.name ?? 'Mi empresa';
+    return this.companySettings.companyName;
   }
 
   get currentCompanyEmail(): string {
-    return this.auth.session()?.email ?? 'contacto@retolab.app';
+    return this.companySettings.contactEmail;
   }
 
   get currentCompanyInitials(): string {
@@ -360,14 +374,83 @@ export class CompanyDashboardComponent {
     return Math.round((completed / values.length) * 100);
   }
 
+  get metrics(): MetricItem[] {
+    const activeChallenges = this.publishedChallenges.filter((challenge) => challenge.status !== 'Cerrado').length;
+    const totalApplicants = this.publishedChallenges.reduce((acc, challenge) => acc + challenge.applicants, 0);
+    const closedChallenges = this.publishedChallenges.filter((challenge) => challenge.status === 'Cerrado').length;
+    const totalInvestment = this.publishedChallenges.reduce(
+      (acc, challenge) => acc + this.rewardToNumber(challenge.reward),
+      0,
+    );
+
+    return [
+      {
+        label: 'Retos activos',
+        value: String(activeChallenges),
+        change: `${activeChallenges} en curso`,
+        up: true,
+        color: '#00C9A7',
+        bg: '#F0FDF9',
+        icon: 'Target',
+      },
+      {
+        label: 'Postulaciones recibidas',
+        value: String(totalApplicants),
+        change: 'Actualizado en tiempo real',
+        up: true,
+        color: '#6366F1',
+        bg: '#EEF2FF',
+        icon: 'Users',
+      },
+      {
+        label: 'Retos finalizados',
+        value: String(closedChallenges),
+        change: `${closedChallenges} cerrados`,
+        up: null,
+        color: '#F59E0B',
+        bg: '#FFFBEB',
+        icon: 'CheckCircle2',
+      },
+      {
+        label: 'Inversion total',
+        value: this.formatReward(totalInvestment),
+        change: 'En recompensas publicadas',
+        up: null,
+        color: '#EC4899',
+        bg: '#FDF2F8',
+        icon: 'DollarSign',
+      },
+    ];
+  }
+
   get configFields(): BasicField[] {
     return [
-      { label: 'Nombre de la empresa', value: this.currentCompanyName },
-      { label: 'Industria principal', value: 'Tecnologia / SaaS' },
-      { label: 'Sitio web', value: 'www.retocompany.com' },
-      { label: 'Plan activo', value: 'Enterprise - Renovacion feb 2027' },
-      { label: 'Correo de contacto', value: this.currentCompanyEmail },
+      { key: 'companyName', label: 'Nombre de la empresa', value: this.currentCompanyName },
+      { key: 'industry', label: 'Industria principal', value: this.companySettings.industry },
+      { key: 'website', label: 'Sitio web', value: this.companySettings.website },
+      { key: 'plan', label: 'Plan activo', value: this.companySettings.plan },
+      { key: 'contactEmail', label: 'Correo de contacto', value: this.currentCompanyEmail },
     ];
+  }
+
+  get displayedPublishedChallenges(): PublishedChallenge[] {
+    if (this.selectedChallengeTab === 'Todos') {
+      return this.publishedChallenges;
+    }
+
+    if (this.selectedChallengeTab === 'Abiertos') {
+      return this.publishedChallenges.filter((challenge) => challenge.status === 'Abierto');
+    }
+
+    if (this.selectedChallengeTab === 'En revision') {
+      return this.publishedChallenges.filter((challenge) => challenge.status === 'En revision');
+    }
+
+    return this.publishedChallenges.filter((challenge) => challenge.status === 'Cerrado');
+  }
+
+  get isEditingChallenge(): boolean {
+    return this.editingChallengeId !== null;
   }
 
   goHome(): void {
@@ -378,6 +461,7 @@ export class CompanyDashboardComponent {
     this.auth.logout();
     this.sidebarOpen = false;
     this.closeFloatingPanels();
+    this.clearActionMessage();
 
     void this.router.navigate(['/acceso'], {
       queryParams: { mode: 'login' },
@@ -388,6 +472,43 @@ export class CompanyDashboardComponent {
     this.activeNav = path;
     this.sidebarOpen = false;
     this.closeFloatingPanels();
+  }
+
+  setChallengeTab(tab: ChallengeTab): void {
+    this.selectedChallengeTab = tab;
+  }
+
+  toggleQuickFilter(): void {
+    const currentIndex = this.challengeTabs.indexOf(this.selectedChallengeTab);
+    const nextIndex = (currentIndex + 1) % this.challengeTabs.length;
+    this.selectedChallengeTab = this.challengeTabs[nextIndex];
+    this.actionMessage = `Filtro activo: ${this.selectedChallengeTab}.`;
+  }
+
+  exportChallenges(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      total: this.displayedPublishedChallenges.length,
+      challenges: this.displayedPublishedChallenges,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `retolab-retos-${Date.now()}.json`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+
+    this.actionMessage = 'Exportacion completada en formato JSON.';
+  }
+
+  clearActionMessage(): void {
+    this.actionMessage = '';
   }
 
   toggleSidebar(): void {
@@ -494,9 +615,32 @@ export class CompanyDashboardComponent {
   }
 
   openCreateModal(): void {
+    this.openCreateModalFor();
+  }
+
+  openCreateModalFor(challengeId?: number): void {
     this.showCreateModal = true;
     this.modalStep = 1;
     this.modalError = '';
+    this.editingChallengeId = null;
+    this.challengeForm = this.getEmptyChallengeForm();
+
+    if (typeof challengeId === 'number') {
+      const challenge = this.publishedChallenges.find((item) => item.id === challengeId);
+
+      if (challenge) {
+        this.editingChallengeId = challenge.id;
+        this.challengeForm = {
+          title: challenge.title,
+          description: challenge.description,
+          industry: challenge.industry,
+          level: challenge.level,
+          reward: String(this.rewardToNumber(challenge.reward)),
+          deadline: challenge.deadlineDate,
+        };
+      }
+    }
+
     this.closeFloatingPanels();
   }
 
@@ -504,6 +648,7 @@ export class CompanyDashboardComponent {
     this.showCreateModal = false;
     this.modalStep = 1;
     this.modalError = '';
+    this.editingChallengeId = null;
     this.challengeForm = this.getEmptyChallengeForm();
   }
 
@@ -531,6 +676,15 @@ export class CompanyDashboardComponent {
       return;
     }
 
+    if (this.editingChallengeId !== null) {
+      this.updateChallengeFromForm(this.editingChallengeId);
+      this.actionMessage = 'Reto actualizado correctamente.';
+    } else {
+      this.createChallengeFromForm();
+      this.actionMessage = 'Reto publicado correctamente.';
+    }
+
+    this.saveChallenges();
     this.closeCreateModal();
   }
 
@@ -545,6 +699,135 @@ export class CompanyDashboardComponent {
       ...this.challengeForm,
       [field]: target.value,
     };
+  }
+
+  editChallenge(challengeId: number): void {
+    this.openCreateModalFor(challengeId);
+  }
+
+  deleteChallenge(challengeId: number): void {
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm('Esta accion eliminara el reto. Deseas continuar?');
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    const originalCount = this.publishedChallenges.length;
+    this.publishedChallenges = this.publishedChallenges.filter((challenge) => challenge.id !== challengeId);
+
+    if (this.publishedChallenges.length === originalCount) {
+      this.actionMessage = 'No se encontro el reto para eliminar.';
+      return;
+    }
+
+    this.saveChallenges();
+    this.actionMessage = 'Reto eliminado correctamente.';
+  }
+
+  selectWinner(applicant: TopApplicant): void {
+    const challenge = this.findChallengeForApplicant(applicant);
+
+    if (!challenge) {
+      this.actionMessage = 'No se encontro un reto compatible para asignar ganador.';
+      return;
+    }
+
+    this.publishedChallenges = this.publishedChallenges.map((item) => {
+      if (item.id !== challenge.id) {
+        return item;
+      }
+
+      return {
+        ...item,
+        status: 'Cerrado',
+        winner: applicant.name,
+        deadline: 'Finalizado',
+      };
+    });
+
+    this.saveChallenges();
+    this.setActiveNav('retos');
+    this.actionMessage = `Ganador asignado: ${applicant.name} en ${challenge.title}.`;
+  }
+
+  viewProposal(applicant: TopApplicant): void {
+    const details =
+      `Postulante: ${applicant.name}\n` +
+      `Universidad: ${applicant.university}\n` +
+      `Reto: ${applicant.challenge}\n` +
+      `Score: ${applicant.score}\n\n` +
+      'Esta vista usa datos locales de demostracion.';
+
+    if (typeof window !== 'undefined') {
+      window.alert(details);
+    }
+
+    this.actionMessage = `Propuesta abierta para ${applicant.name}.`;
+  }
+
+  upgradePlan(): void {
+    if (this.companySettings.plan.includes('Plus')) {
+      this.actionMessage = 'Tu empresa ya esta en el plan Enterprise Plus.';
+      return;
+    }
+
+    this.companySettings = {
+      ...this.companySettings,
+      plan: 'Enterprise Plus - Renovacion abr 2027',
+    };
+
+    this.saveSettings();
+    this.actionMessage = 'Plan actualizado a Enterprise Plus (local).';
+  }
+
+  editConfigField(fieldKey: ConfigFieldKey): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const labelMap: Record<ConfigFieldKey, string> = {
+      companyName: 'Nombre de la empresa',
+      industry: 'Industria principal',
+      website: 'Sitio web',
+      plan: 'Plan activo',
+      contactEmail: 'Correo de contacto',
+    };
+
+    const currentValue = this.companySettings[fieldKey];
+    const nextValue = window.prompt(`Actualizar ${labelMap[fieldKey]}`, currentValue);
+
+    if (nextValue === null) {
+      return;
+    }
+
+    const cleanValue = nextValue.trim();
+
+    if (!cleanValue) {
+      this.actionMessage = 'El valor no puede quedar vacio.';
+      return;
+    }
+
+    if (fieldKey === 'contactEmail' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
+      this.actionMessage = 'Ingresa un correo de contacto valido.';
+      return;
+    }
+
+    if (fieldKey === 'companyName') {
+      this.companySettings = { ...this.companySettings, companyName: cleanValue };
+    } else if (fieldKey === 'industry') {
+      this.companySettings = { ...this.companySettings, industry: cleanValue };
+    } else if (fieldKey === 'website') {
+      this.companySettings = { ...this.companySettings, website: cleanValue };
+    } else if (fieldKey === 'plan') {
+      this.companySettings = { ...this.companySettings, plan: cleanValue };
+    } else {
+      this.companySettings = { ...this.companySettings, contactEmail: cleanValue };
+    }
+
+    this.saveSettings();
+    this.actionMessage = `${labelMap[fieldKey]} actualizado.`;
   }
 
   getNavTitle(): string {
@@ -565,6 +848,324 @@ export class CompanyDashboardComponent {
     }
 
     return 'Configuracion';
+  }
+
+  private createChallengeFromForm(): void {
+    const nextId = this.publishedChallenges.reduce((max, challenge) => Math.max(max, challenge.id), 0) + 1;
+    const visual = this.getIndustryVisual(this.challengeForm.industry);
+    const rewardValue = Number(this.challengeForm.reward);
+
+    const challenge: PublishedChallenge = {
+      id: nextId,
+      title: this.challengeForm.title.trim(),
+      industry: this.challengeForm.industry,
+      reward: this.formatReward(rewardValue),
+      status: 'Abierto',
+      applicants: 0,
+      deadline: this.formatDeadlineLabel(this.challengeForm.deadline),
+      deadlineDate: this.challengeForm.deadline,
+      published: this.formatHumanDate(new Date()),
+      icon: visual.icon,
+      color: visual.color,
+      views: 0,
+      description: this.challengeForm.description.trim(),
+      level: this.challengeForm.level,
+    };
+
+    this.publishedChallenges = [challenge, ...this.publishedChallenges];
+    this.selectedChallengeTab = 'Todos';
+  }
+
+  private updateChallengeFromForm(challengeId: number): void {
+    const visual = this.getIndustryVisual(this.challengeForm.industry);
+    const rewardValue = Number(this.challengeForm.reward);
+    const deadlineLabel = this.formatDeadlineLabel(this.challengeForm.deadline);
+
+    this.publishedChallenges = this.publishedChallenges.map((challenge) => {
+      if (challenge.id !== challengeId) {
+        return challenge;
+      }
+
+      const nextStatus: ChallengeStatus =
+        challenge.winner || deadlineLabel === 'Finalizado'
+          ? 'Cerrado'
+          : challenge.status === 'Cerrado'
+            ? 'En revision'
+            : challenge.status;
+
+      return {
+        ...challenge,
+        title: this.challengeForm.title.trim(),
+        description: this.challengeForm.description.trim(),
+        industry: this.challengeForm.industry,
+        level: this.challengeForm.level,
+        reward: this.formatReward(rewardValue),
+        deadline: deadlineLabel,
+        deadlineDate: this.challengeForm.deadline,
+        icon: visual.icon,
+        color: visual.color,
+        status: nextStatus,
+        winner: nextStatus === 'Cerrado' ? challenge.winner : undefined,
+      };
+    });
+  }
+
+  private findChallengeForApplicant(applicant: TopApplicant): PublishedChallenge | null {
+    const target = applicant.challenge.trim().toLowerCase();
+
+    const directMatch = this.publishedChallenges.find(
+      (challenge) => challenge.title.toLowerCase().includes(target) && challenge.status !== 'Cerrado',
+    );
+
+    if (directMatch) {
+      return directMatch;
+    }
+
+    return this.publishedChallenges.find((challenge) => challenge.status !== 'Cerrado') ?? null;
+  }
+
+  private getIndustryVisual(industry: string): { color: string; icon: string } {
+    const normalized = industry.toLowerCase();
+
+    if (normalized.includes('fintech')) {
+      return { color: '#6366F1', icon: 'Sparkles' };
+    }
+
+    if (normalized.includes('logistica')) {
+      return { color: '#F59E0B', icon: 'Globe' };
+    }
+
+    if (normalized.includes('data') || normalized.includes('ai')) {
+      return { color: '#EC4899', icon: 'Code2' };
+    }
+
+    if (normalized.includes('marketing')) {
+      return { color: '#22C55E', icon: 'Briefcase' };
+    }
+
+    if (normalized.includes('cloud')) {
+      return { color: '#0EA5E9', icon: 'BarChart3' };
+    }
+
+    return { color: '#00C9A7', icon: 'Target' };
+  }
+
+  private formatReward(value: number): string {
+    const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+    return `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(safeValue)}`;
+  }
+
+  private formatDeadlineLabel(deadlineDate: string): string {
+    const parsedDate = new Date(deadlineDate);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return 'Sin fecha';
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(parsedDate);
+    endDate.setHours(0, 0, 0, 0);
+
+    const diffMs = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffMs / 86400000);
+
+    if (diffDays <= 0) {
+      return 'Finalizado';
+    }
+
+    return `${diffDays} dias restantes`;
+  }
+
+  private formatHumanDate(date: Date): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+      .format(date)
+      .replace('.', '');
+  }
+
+  private toIsoDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private rewardToNumber(reward: string): number {
+    const clean = reward.replace(/[^\d.]/g, '');
+    const numeric = Number(clean);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }
+
+  private getSessionCompanyName(): string {
+    return this.auth.session()?.name?.trim() || 'Mi empresa';
+  }
+
+  private getSessionCompanyEmail(): string {
+    return this.auth.session()?.email?.trim() || 'contacto@retolab.app';
+  }
+
+  private getDefaultSettings(): CompanySettings {
+    return {
+      companyName: this.getSessionCompanyName(),
+      industry: 'Tecnologia / SaaS',
+      website: 'www.retocompany.com',
+      plan: 'Enterprise - Renovacion feb 2027',
+      contactEmail: this.getSessionCompanyEmail(),
+    };
+  }
+
+  private hydrateLocalState(): void {
+    const fallbackSettings = this.getDefaultSettings();
+    const storedSettings = this.readJson<Partial<CompanySettings>>(this.settingsStorageKey, {});
+
+    this.companySettings = {
+      companyName: typeof storedSettings.companyName === 'string' && storedSettings.companyName.trim()
+        ? storedSettings.companyName.trim()
+        : fallbackSettings.companyName,
+      industry: typeof storedSettings.industry === 'string' && storedSettings.industry.trim()
+        ? storedSettings.industry.trim()
+        : fallbackSettings.industry,
+      website: typeof storedSettings.website === 'string' && storedSettings.website.trim()
+        ? storedSettings.website.trim()
+        : fallbackSettings.website,
+      plan: typeof storedSettings.plan === 'string' && storedSettings.plan.trim()
+        ? storedSettings.plan.trim()
+        : fallbackSettings.plan,
+      contactEmail: typeof storedSettings.contactEmail === 'string' && storedSettings.contactEmail.trim()
+        ? storedSettings.contactEmail.trim()
+        : fallbackSettings.contactEmail,
+    };
+
+    const storedChallenges = this.readJson<unknown>(this.challengesStorageKey, null);
+
+    if (Array.isArray(storedChallenges)) {
+      const parsed = storedChallenges
+        .map((item) => this.toPublishedChallenge(item))
+        .filter((item): item is PublishedChallenge => item !== null);
+
+      if (parsed.length > 0) {
+        this.publishedChallenges = parsed;
+        return;
+      }
+    }
+
+    this.publishedChallenges = this.defaultPublishedChallenges.map((challenge) => ({ ...challenge }));
+  }
+
+  private toPublishedChallenge(value: unknown): PublishedChallenge | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const record = value as Partial<PublishedChallenge>;
+
+    if (
+      typeof record.id !== 'number' ||
+      !Number.isFinite(record.id) ||
+      typeof record.title !== 'string' ||
+      !record.title.trim() ||
+      typeof record.industry !== 'string' ||
+      !record.industry.trim() ||
+      typeof record.reward !== 'string' ||
+      typeof record.applicants !== 'number' ||
+      !Number.isFinite(record.applicants) ||
+      typeof record.deadline !== 'string' ||
+      typeof record.published !== 'string' ||
+      typeof record.icon !== 'string' ||
+      typeof record.color !== 'string' ||
+      typeof record.views !== 'number' ||
+      !Number.isFinite(record.views)
+    ) {
+      return null;
+    }
+
+    const status: ChallengeStatus = this.isChallengeStatus(record.status) ? record.status : 'Abierto';
+    const deadlineDate =
+      typeof record.deadlineDate === 'string' && record.deadlineDate.trim()
+        ? record.deadlineDate
+        : this.toIsoDate(new Date());
+    const description =
+      typeof record.description === 'string' && record.description.trim()
+        ? record.description
+        : 'Descripcion no disponible.';
+    const level = typeof record.level === 'string' && record.level.trim() ? record.level : 'Intermedio';
+    const winner = typeof record.winner === 'string' && record.winner.trim() ? record.winner : undefined;
+
+    return {
+      id: record.id,
+      title: record.title.trim(),
+      industry: record.industry.trim(),
+      reward: record.reward,
+      status,
+      applicants: Math.max(0, Math.round(record.applicants)),
+      deadline: record.deadline,
+      deadlineDate,
+      published: record.published,
+      icon: record.icon,
+      color: record.color,
+      views: Math.max(0, Math.round(record.views)),
+      description,
+      level,
+      winner,
+    };
+  }
+
+  private saveChallenges(): void {
+    this.writeJson(this.challengesStorageKey, this.publishedChallenges);
+  }
+
+  private saveSettings(): void {
+    this.writeJson(this.settingsStorageKey, this.companySettings);
+  }
+
+  private isChallengeStatus(value: unknown): value is ChallengeStatus {
+    return value === 'Abierto' || value === 'En revision' || value === 'Cerrado';
+  }
+
+  private readJson<T>(key: string, fallback: T): T {
+    const storage = this.getStorage();
+
+    if (!storage) {
+      return fallback;
+    }
+
+    try {
+      const raw = storage.getItem(key);
+
+      if (!raw) {
+        return fallback;
+      }
+
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private writeJson(key: string, value: unknown): void {
+    const storage = this.getStorage();
+
+    if (!storage) {
+      return;
+    }
+
+    try {
+      storage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Ignore local storage write errors.
+    }
+  }
+
+  private getStorage(): Storage | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    return window.localStorage;
   }
 
   private getEmptyChallengeForm(): ChallengeForm {

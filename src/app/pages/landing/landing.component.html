@@ -33,6 +33,7 @@
         <nav class="hidden md:flex items-center gap-1">
           @for (item of menuItems; track item) {
           <button
+            (click)="navigateMenu(item)"
             style="
               padding: 8px 14px;
               border-radius: 8px;
@@ -98,6 +99,7 @@
     <div style="background-color: #fff; border-top: 1px solid #e2e8f0; padding: 16px">
       @for (item of menuItems; track item) {
       <button
+        (click)="navigateMenu(item)"
         style="
           display: block;
           width: 100%;
@@ -378,7 +380,7 @@
     </div>
   </section>
 
-  <section style="background-color: #f8fafc" class="py-20 md:py-28">
+  <section id="como-funciona" style="background-color: #f8fafc" class="py-20 md:py-28">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-16">
         <span
@@ -469,7 +471,7 @@
     </div>
   </section>
 
-  <section style="background-color: #fff; border-top: 1px solid #e2e8f0" class="py-20 md:py-28">
+  <section id="explorar-retos" style="background-color: #fff; border-top: 1px solid #e2e8f0" class="py-20 md:py-28">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
         <div>
@@ -610,7 +612,7 @@
     </div>
   </section>
 
-  <section style="background-color: #f8fafc; border-top: 1px solid #e2e8f0" class="py-14">
+  <section id="para-empresas" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0" class="py-14">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <p
         style="

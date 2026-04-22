@@ -555,6 +555,40 @@
     }
 
     <div style="padding: 24px">
+      @if (dashboardMessage) {
+      <div
+        style="
+          margin-bottom: 16px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid #bae6fd;
+          background-color: #f0f9ff;
+          color: #0c4a6e;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        "
+      >
+        <span>{{ dashboardMessage }}</span>
+        <button
+          type="button"
+          (click)="dashboardMessage = ''"
+          style="
+            border: none;
+            background: transparent;
+            color: #0369a1;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+          "
+        >
+          Cerrar
+        </button>
+      </div>
+      }
+
       @if (activeNav === 'inicio') {
       <div>
         <div
@@ -928,6 +962,9 @@
                   </div>
                 </div>
                 <button
+                  (click)="applyToChallenge(challenge.id)"
+                  [disabled]="hasAppliedToChallenge(challenge.id)"
+                  [style.opacity]="hasAppliedToChallenge(challenge.id) ? '0.75' : '1'"
                   style="
                     padding: 9px 16px;
                     border-radius: 8px;
@@ -943,8 +980,11 @@
                     white-space: nowrap;
                   "
                 >
-                  Postularme
-                  <app-lucide-icon name="ArrowUpRight" [size]="14"></app-lucide-icon>
+                  {{ hasAppliedToChallenge(challenge.id) ? 'Ya postulaste' : 'Postularme' }}
+                  <app-lucide-icon
+                    [name]="hasAppliedToChallenge(challenge.id) ? 'CheckCircle2' : 'ArrowUpRight'"
+                    [size]="14"
+                  ></app-lucide-icon>
                 </button>
               </div>
             </div>

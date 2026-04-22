@@ -4,6 +4,7 @@ import { LucideIconComponent } from '../../shared/lucide-icon/lucide-icon.compon
 import { UserRole } from '../../core/auth/auth.models';
 
 type AccessMode = 'login' | 'register';
+type LandingSectionId = 'como-funciona' | 'explorar-retos' | 'para-empresas';
 
 interface FeaturedChallenge {
   id: number;
@@ -121,6 +122,11 @@ export class LandingComponent {
   ];
 
   readonly menuItems = ['Como funciona', 'Explorar retos', 'Para empresas'];
+  private readonly menuSections: Record<string, LandingSectionId> = {
+    'Como funciona': 'como-funciona',
+    'Explorar retos': 'explorar-retos',
+    'Para empresas': 'para-empresas',
+  };
 
   mobileMenuOpen = false;
 
@@ -142,5 +148,26 @@ export class LandingComponent {
 
   toggleMobileMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  navigateMenu(item: string): void {
+    this.mobileMenuOpen = false;
+
+    const targetSection = this.menuSections[item];
+
+    if (!targetSection) {
+      return;
+    }
+
+    this.scrollToSection(targetSection);
+  }
+
+  private scrollToSection(sectionId: LandingSectionId): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const section = document.getElementById(sectionId);
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }

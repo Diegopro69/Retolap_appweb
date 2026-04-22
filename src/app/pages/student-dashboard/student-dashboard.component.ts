@@ -26,6 +26,7 @@ interface ChallengeItem {
 
 interface ApplicationItem {
   id: number;
+  challengeId?: number;
   title: string;
   company: string;
   reward: string;
@@ -87,6 +88,8 @@ type SortOption = 'Mayor recompensa' | 'Mas reciente' | 'Cierre proximo';
 })
 export class StudentDashboardComponent {
   private readonly mobileBreakpoint = 768;
+  private readonly applicationsStorageKey = 'retolab.student.applications';
+  private readonly savedStorageKey = 'retolab.student.saved';
 
   readonly challenges: ChallengeItem[] = [
     {
@@ -193,7 +196,7 @@ export class StudentDashboardComponent {
     },
   ];
 
-  readonly myApplications: ApplicationItem[] = [
+  private readonly defaultApplications: ApplicationItem[] = [
     {
       id: 1,
       title: 'Analisis de competencia para marketplace',
@@ -228,6 +231,8 @@ export class StudentDashboardComponent {
     },
   ];
 
+  myApplications: ApplicationItem[] = [];
+
   readonly navItems: NavItem[] = [
     { icon: 'Home', label: 'Inicio', path: 'inicio' },
     { icon: 'Target', label: 'Retos disponibles', path: 'retos' },
@@ -240,13 +245,6 @@ export class StudentDashboardComponent {
   readonly levels = ['Todos', 'Basico', 'Intermedio', 'Avanzado'];
 
   readonly sortOptions: SortOption[] = ['Mayor recompensa', 'Mas reciente', 'Cierre proximo'];
-
-  readonly quickStats: QuickStat[] = [
-    { label: 'Postulaciones', value: '2', icon: 'FileText', color: '#6366F1' },
-    { label: 'Retos guardados', value: '1', icon: 'Bookmark', color: '#F59E0B' },
-    { label: 'Ganancias', value: '$0', icon: 'DollarSign', color: '#00C9A7' },
-    { label: 'Insignias', value: '3', icon: 'Award', color: '#EC4899' },
-  ];
 
   notifications: NotificationItem[] = [
     {
@@ -302,12 +300,14 @@ export class StudentDashboardComponent {
   selectedApplication: ApplicationItem | null = null;
   isEditingProfile = false;
   profileFeedback = '';
+  dashboardMessage = '';
 
   constructor(
     private readonly router: Router,
     private readonly auth: AuthService,
   ) {
     this.updateViewportState();
+    this.hydrateLocalState();
   }
 
   get showDesktopSidebar(): boolean {
@@ -373,6 +373,15 @@ export class StudentDashboardComponent {
     ];
   }
 
+  get quickStats(): QuickStat[] {
+    return [
+      { label: 'Postulaciones', value: String(this.myApplications.length), icon: 'FileText', color: '#6366F1' },
+      { label: 'Retos guardados', value: String(this.savedIds.length), icon: 'Bookmark', color: '#F59E0B' },
+      { label: 'Ganancias', value: '$0', icon: 'DollarSign', color: '#00C9A7' },
+      { label: 'Insignias', value: '3', icon: 'Award', color: '#EC4899' },
+    ];
+  }
+
   get filteredChallenges(): ChallengeItem[] {
     const filtered = this.challenges.filter((challenge) => {
       const matchIndustry =
@@ -411,13 +420,56 @@ export class StudentDashboardComponent {
     this.selectedLevel = level;
   }
 
+  hasAppliedToChallenge(challengeId: number): boolean {
+    return this.myApplications.some((application) => application.challengeId === challengeId);
+  }
+
+  applyToChallenge(challengeId: number): void {
+    const challenge = this.challenges.find((item) => item.id === challengeId);
+
+    if (!challenge) {
+      this.dashboardMessage = 'No se encontro el reto seleccionado.';
+      return;
+    }
+
+    if (this.hasAppliedToChallenge(challengeId)) {
+      this.dashboardMessage = 'Ya te postulaste a este reto.';
+      return;
+    }
+
+    const newApplication: ApplicationItem = {
+      id: this.myApplications.reduce((max, app) => Math.max(max, app.id), 0) + 1,
+      challengeId: challenge.id,
+      title: challenge.title,
+      company: challenge.company,
+      reward: challenge.reward,
+      status: 'En revision',
+      statusColor: '#F59E0B',
+      statusBg: '#FFFBEB',
+      submittedAt: 'Hace unos segundos',
+      submittedDate: this.formatHumanDate(new Date()),
+      summary: `Postulacion enviada para resolver el reto ${challenge.title}.`,
+      focus: challenge.tags.slice(0, 3),
+      nextStep: 'Esperando revision inicial de la empresa',
+      companyFeedback: 'Postulacion recibida. Te contactaremos pronto con novedades.',
+    };
+
+    this.myApplications = [newApplication, ...this.myApplications];
+    this.saveApplications();
+    this.dashboardMessage = `Te postulaste correctamente a "${challenge.title}".`;
+  }
+
   toggleSave(id: number): void {
     if (this.savedIds.includes(id)) {
       this.savedIds = this.savedIds.filter((itemId) => itemId !== id);
+      this.saveSavedChallenges();
+      this.dashboardMessage = 'Reto removido de guardados.';
       return;
     }
 
     this.savedIds = [...this.savedIds, id];
+    this.saveSavedChallenges();
+    this.dashboardMessage = 'Reto guardado correctamente.';
   }
 
   setActiveNav(path: StudentNavPath): void {
@@ -592,6 +644,7 @@ export class StudentDashboardComponent {
     this.sidebarOpen = false;
     this.closeFloatingPanels();
     this.closeApplicationDetails();
+    this.dashboardMessage = '';
 
     void this.router.navigate(['/acceso'], {
       queryParams: { mode: 'login' },
@@ -664,6 +717,118 @@ export class StudentDashboardComponent {
       bio: profile.bio,
       skills: [...profile.skills],
     };
+  }
+
+  private formatHumanDate(date: Date): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  private hydrateLocalState(): void {
+    const storedApplications = this.readJson<unknown>(this.applicationsStorageKey, null);
+
+    if (Array.isArray(storedApplications)) {
+      const parsed = storedApplications
+        .filter((item): item is ApplicationItem => this.isApplicationItem(item));
+
+      if (parsed.length > 0) {
+        this.myApplications = parsed;
+      } else {
+        this.myApplications = this.defaultApplications.map((application) => ({ ...application }));
+      }
+    } else {
+      this.myApplications = this.defaultApplications.map((application) => ({ ...application }));
+    }
+
+    const storedSaved = this.readJson<unknown>(this.savedStorageKey, null);
+
+    if (Array.isArray(storedSaved)) {
+      this.savedIds = storedSaved
+        .filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
+        .map((item) => Math.round(item));
+
+      if (this.savedIds.length === 0) {
+        this.savedIds = [2];
+      }
+    }
+  }
+
+  private isApplicationItem(value: unknown): value is ApplicationItem {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as Partial<ApplicationItem>;
+
+    return (
+      typeof record.id === 'number' &&
+      Number.isFinite(record.id) &&
+      typeof record.title === 'string' &&
+      typeof record.company === 'string' &&
+      typeof record.reward === 'string' &&
+      typeof record.status === 'string' &&
+      typeof record.statusColor === 'string' &&
+      typeof record.statusBg === 'string' &&
+      typeof record.submittedAt === 'string' &&
+      typeof record.submittedDate === 'string' &&
+      typeof record.summary === 'string' &&
+      Array.isArray(record.focus) &&
+      record.focus.every((item) => typeof item === 'string') &&
+      typeof record.nextStep === 'string' &&
+      typeof record.companyFeedback === 'string'
+    );
+  }
+
+  private saveApplications(): void {
+    this.writeJson(this.applicationsStorageKey, this.myApplications);
+  }
+
+  private saveSavedChallenges(): void {
+    this.writeJson(this.savedStorageKey, this.savedIds);
+  }
+
+  private readJson<T>(key: string, fallback: T): T {
+    const storage = this.getStorage();
+
+    if (!storage) {
+      return fallback;
+    }
+
+    try {
+      const raw = storage.getItem(key);
+      if (!raw) {
+        return fallback;
+      }
+
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private writeJson(key: string, value: unknown): void {
+    const storage = this.getStorage();
+
+    if (!storage) {
+      return;
+    }
+
+    try {
+      storage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Ignore storage write errors.
+    }
+  }
+
+  private getStorage(): Storage | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    return window.localStorage;
   }
 
   private updateViewportState(): void {
