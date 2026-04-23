@@ -41,6 +41,8 @@ export class AuthComponent implements OnInit, OnDestroy {
   mode: AccessMode = 'login';
   errorMessage = '';
   private readonly emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  private readonly accountPattern = /^\d{10,20}$/;
+  private readonly studentProfileStorageKeyPrefix = 'retolab.student.profile.';
   private queryParamSub?: Subscription;
 
   loginForm = {
@@ -54,6 +56,7 @@ export class AuthComponent implements OnInit, OnDestroy {
     password: '',
     confirmPassword: '',
     role: 'estudiante' as UserRole,
+    accountNumber: '',
   };
 
   constructor(
@@ -116,6 +119,7 @@ export class AuthComponent implements OnInit, OnDestroy {
     const cleanEmail = this.registerForm.email.trim().toLowerCase();
     const cleanPassword = this.registerForm.password.trim();
     const cleanConfirm = this.registerForm.confirmPassword.trim();
+    const cleanAccount = this.registerForm.accountNumber.replace(/\s+/g, '').trim();
 
     if (!cleanName || !cleanEmail || !cleanPassword || !cleanConfirm) {
       this.errorMessage = 'Completa todos los campos para registrarte.';
@@ -142,16 +146,26 @@ export class AuthComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.accountPattern.test(cleanAccount)) {
+      this.errorMessage = 'Ingresa un numero de cuenta valido (10 a 20 digitos).';
+      return;
+    }
+
     const result = this.auth.register({
       name: cleanName,
       email: cleanEmail,
       password: cleanPassword,
       role: this.registerForm.role,
+      accountNumber: cleanAccount,
     });
 
     if (!result.ok || !result.session) {
       this.errorMessage = result.message;
       return;
+    }
+
+    if (result.session.role === 'estudiante') {
+      this.seedStudentProfileWithAccount(result.session.email, cleanAccount);
     }
 
     this.navigateByRole(result.session.role);
@@ -183,5 +197,28 @@ export class AuthComponent implements OnInit, OnDestroy {
 
   private isValidEmail(email: string): boolean {
     return this.emailPattern.test(email.trim().toLowerCase());
+  }
+
+  private seedStudentProfileWithAccount(email: string, accountNumber: string): void {
+    if (typeof window === 'undefined' || !accountNumber) {
+      return;
+    }
+
+    const key = `${this.studentProfileStorageKeyPrefix}${email.trim().toLowerCase()}`;
+
+    try {
+      const raw = window.localStorage.getItem(key);
+      const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+
+      window.localStorage.setItem(
+        key,
+        JSON.stringify({
+          ...parsed,
+          accountNumber,
+        }),
+      );
+    } catch {
+      // Ignore local storage write errors.
+    }
   }
 }

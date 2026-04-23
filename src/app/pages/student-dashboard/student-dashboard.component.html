@@ -130,7 +130,7 @@
               border-radius: 100px;
               padding: 1px 7px;
             "
-            >2</span
+            >{{ myApplications.length }}</span
           >
           }
         </button>
@@ -673,6 +673,76 @@
           }
         </div>
 
+        <div
+          style="
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border-radius: 16px;
+            border: 1px solid #dbeafe;
+            padding: 20px 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+          "
+        >
+          <div class="flex items-start justify-between gap-10 flex-wrap" style="margin-bottom: 14px">
+            <div>
+              <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em">
+                Recompensas ganadas
+              </div>
+              <div
+                style="
+                  font-size: clamp(28px, 4.8vw, 42px);
+                  font-weight: 800;
+                  color: #0f172a;
+                  letter-spacing: -1px;
+                  line-height: 1.05;
+                  margin-top: 6px;
+                "
+              >
+                ${{ rewardsAmountBank }}
+              </div>
+              <div style="font-size: 13px; color: #64748b; margin-top: 6px">
+                Total acumulado por postulaciones seleccionadas
+              </div>
+            </div>
+            <div
+              style="
+                min-width: 220px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                padding: 12px 14px;
+              "
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+                <span style="font-size: 12px; color: #64748b">Premios ganados</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a">{{ rewardsWonCount }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+                <span style="font-size: 12px; color: #64748b">En revision</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a">{{ rewardsPendingCount }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <span style="font-size: 12px; color: #64748b">Promedio ganado</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a">{{ averageWonReward }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              height: 8px;
+              background: #e2e8f0;
+              border-radius: 999px;
+              overflow: hidden;
+            "
+          >
+            <div
+              [style.width.%]="rewardsWonCount > 0 ? 100 : 6"
+              style="height: 100%; background: linear-gradient(90deg, #0ea5e9, #22c55e)"
+            ></div>
+          </div>
+        </div>
+
         <div>
           <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 14px">
             Mis postulaciones recientes
@@ -962,7 +1032,7 @@
                   </div>
                 </div>
                 <button
-                  (click)="applyToChallenge(challenge.id)"
+                  (click)="openApplicationComposeModal(challenge.id)"
                   [disabled]="hasAppliedToChallenge(challenge.id)"
                   [style.opacity]="hasAppliedToChallenge(challenge.id) ? '0.75' : '1'"
                   style="
@@ -999,6 +1069,112 @@
           <p style="font-size: 14px">Prueba con otros filtros</p>
         </div>
         }
+      </div>
+      }
+
+      @if (showApplicationComposeModal) {
+      <div
+        style="
+          position: fixed;
+          inset: 0;
+          z-index: 115;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+        "
+      >
+        <div
+          style="
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+          "
+          (click)="closeApplicationComposeModal()"
+        ></div>
+
+        <div
+          style="
+            position: relative;
+            z-index: 2;
+            width: min(92vw, 560px);
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 24px 40px rgba(15, 23, 42, 0.2);
+            overflow: hidden;
+          "
+        >
+          <div style="padding: 18px 20px; border-bottom: 1px solid #f1f5f9">
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 2px">Mensaje de postulacion</div>
+            <h3 style="font-size: 18px; color: #0f172a; font-weight: 800; margin: 0">
+              Escribe un texto breve para acompañar tu envio
+            </h3>
+          </div>
+
+          <div style="padding: 20px">
+            <p style="margin: 0 0 12px; font-size: 14px; color: #475569; line-height: 1.6">
+              Este mensaje quedara guardado con tu postulacion y la empresa lo vera en el detalle.
+            </p>
+
+            <textarea
+              [value]="applicationComposeText"
+              (input)="applicationComposeText = ($any($event.target).value)"
+              rows="5"
+              placeholder="Ej: Me interesa aportar en este reto porque ya trabaje en problemas similares y puedo entregar una propuesta clara en poco tiempo."
+              style="
+                width: 100%;
+                resize: vertical;
+                min-height: 140px;
+                border-radius: 12px;
+                border: 1px solid #cbd5e1;
+                padding: 14px 16px;
+                font-size: 14px;
+                color: #0f172a;
+                outline: none;
+                background: #f8fafc;
+                box-sizing: border-box;
+              "
+            ></textarea>
+
+            @if (applicationComposeError) {
+            <div style="margin-top: 10px; font-size: 13px; color: #dc2626; font-weight: 600">
+              {{ applicationComposeError }}
+            </div>
+            }
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px">
+              <button
+                (click)="closeApplicationComposeModal()"
+                style="
+                  padding: 10px 16px;
+                  border-radius: 10px;
+                  border: 1px solid #e2e8f0;
+                  background: #fff;
+                  color: #334155;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Cancelar
+              </button>
+              <button
+                (click)="submitApplicationCompose()"
+                style="
+                  padding: 10px 18px;
+                  border-radius: 10px;
+                  border: none;
+                  background: linear-gradient(135deg, #0f172a, #1e293b);
+                  color: #fff;
+                  font-weight: 700;
+                  cursor: pointer;
+                "
+              >
+                Enviar postulacion
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       }
 
@@ -1071,6 +1247,26 @@
               Ver detalles
               <app-lucide-icon name="ChevronRight" [size]="14"></app-lucide-icon>
             </button>
+            @if (canCancelApplication(app)) {
+            <button
+              (click)="cancelApplication(app.id)"
+              style="
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 1px solid #fecaca;
+                background: #fef2f2;
+                color: #b91c1c;
+                font-size: 13px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+            >
+              <app-lucide-icon name="XCircle" [size]="14"></app-lucide-icon>
+              Cancelar
+            </button>
+            }
           </div>
         </div>
         }
@@ -1335,6 +1531,28 @@
             </label>
 
             <label style="font-size: 12px; font-weight: 600; color: #475569">
+              Cuenta de deposito
+              <input
+                [value]="profileDraft.accountNumber"
+                (input)="updateProfileDraftField('accountNumber', $event)"
+                inputmode="numeric"
+                maxlength="20"
+                placeholder="Numero de cuenta para depositos"
+                style="
+                  width: 100%;
+                  margin-top: 5px;
+                  padding: 9px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #e2e8f0;
+                  background: #fff;
+                  color: #0f172a;
+                  font-size: 14px;
+                  box-sizing: border-box;
+                "
+              />
+            </label>
+
+            <label style="font-size: 12px; font-weight: 600; color: #475569">
               Bio profesional
               <textarea
                 rows="4"
@@ -1502,6 +1720,13 @@
             </div>
 
             <div style="margin-bottom: 14px">
+              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px">Mensaje adjunto</div>
+              <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.6">
+                {{ selectedApplication.submissionText }}
+              </p>
+            </div>
+
+            <div style="margin-bottom: 14px">
               <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px">Enfoque principal</div>
               <div style="display: flex; flex-wrap: wrap; gap: 7px">
                 @for (tag of selectedApplication.focus; track tag) {
@@ -1544,7 +1769,23 @@
               <p style="margin: 0; color: #1e3a8a; font-size: 13px; line-height: 1.55">{{ selectedApplication.companyFeedback }}</p>
             </div>
 
-            <div style="margin-top: 18px; display: flex; justify-content: flex-end">
+            <div style="margin-top: 18px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap">
+              @if (canCancelApplication(selectedApplication)) {
+              <button
+                (click)="cancelApplication(selectedApplication.id)"
+                style="
+                  padding: 9px 16px;
+                  border-radius: 8px;
+                  border: 1px solid #fecaca;
+                  background: #fef2f2;
+                  color: #b91c1c;
+                  font-size: 13px;
+                  font-weight: 600;
+                "
+              >
+                Cancelar postulacion
+              </button>
+              }
               <button
                 (click)="closeApplicationDetails()"
                 style="

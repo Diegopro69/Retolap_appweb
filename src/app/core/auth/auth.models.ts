@@ -5,6 +5,7 @@ export interface AuthUserRecord {
   email: string;
   password: string;
   role: UserRole;
+  accountNumber?: string;
 }
 
 export interface AuthSession {
@@ -18,6 +19,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   role: UserRole;
+  accountNumber?: string;
 }
 
 export interface AuthResult {

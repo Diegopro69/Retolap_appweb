@@ -7,6 +7,7 @@ export class AuthService {
   private readonly sessionKey = 'retolab.auth.session';
   private readonly minPasswordLength = 6;
   private readonly emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  private readonly accountPattern = /^\d{10,20}$/;
 
   private readonly sessionState = signal<AuthSession | null>(this.readSession());
 
@@ -27,6 +28,17 @@ export class AuthService {
   redirectForCurrentUser(): string {
     const role = this.currentRole();
     return role ? this.redirectForRole(role) : '/';
+  }
+
+  currentUserAccountNumber(): string {
+    const email = this.sessionState()?.email;
+
+    if (!email) {
+      return '';
+    }
+
+    const user = this.loadUsers().find((record) => record.email === email);
+    return user?.accountNumber ?? '';
   }
 
   login(email: string, password: string): AuthResult {
@@ -72,6 +84,7 @@ export class AuthService {
     const normalizedEmail = this.normalizeEmail(payload.email);
     const cleanName = payload.name.trim();
     const cleanPassword = payload.password.trim();
+    const cleanAccount = this.normalizeAccountNumber(payload.accountNumber);
 
     if (!cleanName || !normalizedEmail || !cleanPassword) {
       return {
@@ -101,6 +114,13 @@ export class AuthService {
       };
     }
 
+    if (!this.isValidAccountNumber(cleanAccount)) {
+      return {
+        ok: false,
+        message: 'Ingresa un numero de cuenta valido (10 a 20 digitos).',
+      };
+    }
+
     const users = this.loadUsers();
     const exists = users.some((record) => record.email === normalizedEmail);
 
@@ -116,6 +136,7 @@ export class AuthService {
       email: normalizedEmail,
       password: cleanPassword,
       role: payload.role,
+      accountNumber: payload.role === 'estudiante' ? cleanAccount : undefined,
     };
 
     this.saveUsers([...users, newUser]);
@@ -160,6 +181,7 @@ export class AuthService {
         email: this.normalizeEmail(record.email),
         password: String(record.password),
         role: record.role,
+        accountNumber: this.normalizeAccountNumber(record.accountNumber),
       }));
   }
 
@@ -196,6 +218,18 @@ export class AuthService {
     return this.emailPattern.test(email);
   }
 
+  private normalizeAccountNumber(accountNumber: string | undefined): string {
+    if (!accountNumber) {
+      return '';
+    }
+
+    return accountNumber.replace(/\s+/g, '').trim();
+  }
+
+  private isValidAccountNumber(accountNumber: string): boolean {
+    return this.accountPattern.test(accountNumber);
+  }
+
   private isRoleValue(role: string): role is UserRole {
     return role === 'estudiante' || role === 'empresa';
   }
@@ -215,7 +249,9 @@ export class AuthService {
       typeof record.password === 'string' &&
       record.password.length > 0 &&
       typeof record.role === 'string' &&
-      this.isRoleValue(record.role)
+      this.isRoleValue(record.role) &&
+      (typeof record.accountNumber === 'undefined' ||
+        this.isValidAccountNumber(this.normalizeAccountNumber(record.accountNumber)))
     );
   }
 

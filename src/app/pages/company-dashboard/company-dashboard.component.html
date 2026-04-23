@@ -946,7 +946,7 @@
             <p style="color: #64748b; font-size: 13px; margin-bottom: 4px">Panel de empresa</p>
             <h2 style="color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -0.4px">Bienvenido, {{ currentCompanyName }}</h2>
             <p style="color: #475569; font-size: 14px; margin-top: 4px">
-              Tienes <span style="color: #00c9a7; font-weight: 600">34 nuevas postulaciones</span> pendientes de
+              Tienes <span style="color: #00c9a7; font-weight: 600">{{ pendingApplicationsCount }} postulaciones</span> pendientes de
               revision.
             </p>
           </div>
@@ -1013,6 +1013,84 @@
             <div style="font-size: 12px; color: #94a3b8">{{ metric.change }}</div>
           </div>
           }
+        </div>
+
+        <div
+          style="
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border-radius: 16px;
+            border: 1px solid #dbeafe;
+            padding: 18px 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+          "
+        >
+          <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em">
+            Cuenta para pagos de la empresa
+          </div>
+          <div style="font-size: clamp(24px, 4vw, 34px); font-weight: 800; color: #0f172a; letter-spacing: -0.8px; margin-top: 6px">
+            {{ currentCompanyPayoutAccount ? currentCompanyPayoutAccount : 'Sin registrar' }}
+          </div>
+          <div style="font-size: 13px; color: #64748b; margin-top: 4px">
+            Esta cuenta se usa como origen para pagar las propuestas ganadoras.
+          </div>
+        </div>
+
+        <div
+          style="
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border-radius: 16px;
+            border: 1px solid #dbeafe;
+            padding: 20px 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+          "
+        >
+          <div class="flex items-start justify-between gap-10 flex-wrap" style="margin-bottom: 14px">
+            <div>
+              <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em">
+                Recompensas asignadas
+              </div>
+              <div style="font-size: clamp(28px, 4.8vw, 42px); font-weight: 800; color: #0f172a; letter-spacing: -1px; line-height: 1.05; margin-top: 6px">
+                ${{ assignedRewardsAmountBank }}
+              </div>
+              <div style="font-size: 13px; color: #64748b; margin-top: 6px">
+                Monto total entregado a ganadores
+              </div>
+            </div>
+            <div
+              style="
+                min-width: 220px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                background: #fff;
+                padding: 12px 14px;
+              "
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+                <span style="font-size: 12px; color: #64748b">Ganadores pagados</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a">{{ assignedRewardsCount }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <span style="font-size: 12px; color: #64748b">Promedio por ganador</span>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a">{{ averageAssignedReward }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              height: 8px;
+              background: #e2e8f0;
+              border-radius: 999px;
+              overflow: hidden;
+            "
+          >
+            <div
+              [style.width.%]="assignedRewardsCount > 0 ? 100 : 6"
+              style="height: 100%; background: linear-gradient(90deg, #0ea5e9, #22c55e)"
+            ></div>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -1147,7 +1225,7 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px">
-              @for (a of topApplicants; track a.name; let i = $index) {
+              @for (a of topApplicants; track (a.applicationId ?? a.name); let i = $index) {
               <div
                 style="
                   background-color: #fff;
@@ -1473,7 +1551,7 @@
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (a of topApplicants; track a.name) {
+          @for (a of topApplicants; track (a.applicationId ?? a.name)) {
           <div style="background-color: #fff; border-radius: 14px; padding: 20px; border: 1px solid #e2e8f0">
             <div class="flex items-center gap-3 mb-4">
               <div
@@ -1495,10 +1573,13 @@
               <div>
                 <div style="font-size: 15px; font-weight: 700; color: #0f172a">{{ a.name }}</div>
                 <div style="font-size: 12px; color: #94a3b8">{{ a.university }} - {{ a.challenge }}</div>
+                @if (a.status) {
+                <div style="font-size: 11px; color: #64748b; margin-top: 2px">Estado: {{ a.status }}</div>
+                }
               </div>
               <div style="margin-left: auto; font-size: 20px; font-weight: 800; color: #00c9a7">{{ a.score }}</div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap">
               <button
                 (click)="selectWinner(a)"
                 style="
@@ -1515,6 +1596,38 @@
               >
                 Seleccionar ganador
               </button>
+              <button
+                (click)="assignReward(a)"
+                style="
+                  padding: 9px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #bbf7d0;
+                  background: #f0fdf4;
+                  color: #15803d;
+                  font-size: 13px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Asignar recompensa
+              </button>
+              @if (a.status !== 'Seleccionado' && a.status !== 'Rechazado') {
+              <button
+                (click)="rejectProposal(a)"
+                style="
+                  padding: 9px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #fecaca;
+                  background: #fef2f2;
+                  color: #b91c1c;
+                  font-size: 13px;
+                  font-weight: 600;
+                  cursor: pointer;
+                "
+              >
+                Rechazar propuesta
+              </button>
+              }
               <button
                 (click)="viewProposal(a)"
                 style="
@@ -1546,11 +1659,7 @@
           Analiticas
         </h1>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-          @for (stat of [
-          { label: 'Tasa de conversion', value: '26%', desc: 'Postulaciones - Finalistas', color: '#00C9A7' },
-          { label: 'Costo por talento', value: '$47', desc: 'Por postulacion recibida', color: '#6366F1' },
-          { label: 'Tiempo promedio', value: '14 dias', desc: 'Para cerrar un reto', color: '#F59E0B' }
-          ]; track stat.label) {
+          @for (stat of analyticsCards; track stat.label) {
           <div
             style="
               background-color: #fff;

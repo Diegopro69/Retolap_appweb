@@ -123,6 +123,20 @@
           </div>
         </label>
 
+        <label>
+          Cuenta de deposito
+          <div class="field">
+            <app-lucide-icon name="Landmark" [size]="16" color="#64748B"></app-lucide-icon>
+            <input
+              type="text"
+              placeholder="Numero de cuenta (10 a 20 digitos)"
+              inputmode="numeric"
+              maxlength="20"
+              [(ngModel)]="registerForm.accountNumber"
+            />
+          </div>
+        </label>
+
         <div class="two-columns">
           <label>
             Contrasena

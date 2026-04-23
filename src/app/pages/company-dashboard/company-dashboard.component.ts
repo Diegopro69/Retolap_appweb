@@ -6,7 +6,7 @@ import { AuthService } from '../../core/auth/auth.service';
 type CompanyNavPath = 'dashboard' | 'retos' | 'postulaciones' | 'analiticas' | 'config';
 type ChallengeStatus = 'Abierto' | 'En revision' | 'Cerrado';
 type ChallengeTab = 'Todos' | 'Abiertos' | 'En revision' | 'Cerrados';
-type ConfigFieldKey = 'companyName' | 'industry' | 'website' | 'plan' | 'contactEmail';
+type ConfigFieldKey = 'companyName' | 'industry' | 'website' | 'plan' | 'contactEmail' | 'payoutAccountNumber';
 
 interface CompanyNavItem {
   icon: string;
@@ -27,6 +27,7 @@ interface PublishedChallenge {
   id: number;
   title: string;
   industry: string;
+  companyName?: string;
   reward: string;
   status: ChallengeStatus;
   applicants: number;
@@ -43,11 +44,41 @@ interface PublishedChallenge {
 
 interface TopApplicant {
   name: string;
+  studentEmail?: string;
   university: string;
   challenge: string;
   score: number;
   avatar: string;
   color: string;
+  applicationId?: number;
+  challengeId?: number;
+  summary?: string;
+  focus?: string[];
+  submittedDate?: string;
+  status?: string;
+  payoutAccountNumber?: string;
+  submissionText?: string;
+}
+
+interface CompanyApplicationRecord {
+  id: number;
+  challengeId: number;
+  challengeTitle: string;
+  studentName: string;
+  studentEmail: string;
+  university: string;
+  reward: string;
+  summary: string;
+  focus: string[];
+  submittedDate: string;
+  submittedAt: string;
+  status: string;
+  score: number;
+  color: string;
+  avatar: string;
+  rewardAssigned?: boolean;
+  payoutAccountNumber?: string;
+  submissionText: string;
 }
 
 interface MetricItem {
@@ -87,6 +118,7 @@ interface CompanySettings {
   website: string;
   plan: string;
   contactEmail: string;
+  payoutAccountNumber: string;
 }
 
 @Component({
@@ -100,6 +132,10 @@ export class CompanyDashboardComponent {
   private readonly mobileBreakpoint = 768;
   private readonly challengesStorageKey = 'retolab.company.challenges';
   private readonly settingsStorageKey = 'retolab.company.settings';
+  private readonly applicationsStorageKey = 'retolab.company.applications';
+  private readonly notificationsStorageKey = 'retolab.company.notifications';
+  private readonly studentApplicationsStorageKeyPrefix = 'retolab.student.applications.';
+  private readonly studentNotificationsStorageKeyPrefix = 'retolab.student.notifications.';
 
   readonly challengeTabs: ChallengeTab[] = ['Todos', 'Abiertos', 'En revision', 'Cerrados'];
 
@@ -116,6 +152,7 @@ export class CompanyDashboardComponent {
       id: 1,
       title: 'Estrategia de Growth Hacking para SaaS B2B',
       industry: 'Tecnologia',
+      companyName: 'TechFlow',
       reward: '$1,200',
       status: 'Abierto',
       applicants: 34,
@@ -133,6 +170,7 @@ export class CompanyDashboardComponent {
       id: 2,
       title: 'Rediseno UX de app de pagos moviles',
       industry: 'Fintech',
+      companyName: 'FinNova',
       reward: '$800',
       status: 'En revision',
       applicants: 21,
@@ -150,6 +188,7 @@ export class CompanyDashboardComponent {
       id: 3,
       title: 'Modelo de expansion para mercados LATAM',
       industry: 'Logistica',
+      companyName: 'LogiCorp',
       reward: '$2,000',
       status: 'Abierto',
       applicants: 12,
@@ -167,6 +206,7 @@ export class CompanyDashboardComponent {
       id: 4,
       title: 'Pipeline de datos para analisis de clientes',
       industry: 'Data & AI',
+      companyName: 'DataSense',
       reward: '$1,500',
       status: 'Cerrado',
       applicants: 18,
@@ -185,6 +225,7 @@ export class CompanyDashboardComponent {
       id: 5,
       title: 'Plan de marketing de contenidos B2C',
       industry: 'Marketing',
+      companyName: 'GreenAI',
       reward: '$600',
       status: 'Cerrado',
       applicants: 45,
@@ -202,8 +243,9 @@ export class CompanyDashboardComponent {
   ];
 
   publishedChallenges: PublishedChallenge[] = [];
+  receivedApplications: CompanyApplicationRecord[] = [];
 
-  readonly topApplicants: TopApplicant[] = [
+  private readonly fallbackTopApplicants: TopApplicant[] = [
     {
       name: 'Laura Gomez',
       university: 'Tec de Monterrey',
@@ -301,12 +343,17 @@ export class CompanyDashboardComponent {
     },
   ];
 
+  private readonly defaultNotifications: CompanyNotificationItem[] = this.notifications.map((notification) => ({
+    ...notification,
+  }));
+
   companySettings: CompanySettings = {
     companyName: 'Mi empresa',
     industry: 'Tecnologia / SaaS',
     website: 'www.retocompany.com',
     plan: 'Enterprise - Renovacion feb 2027',
     contactEmail: 'contacto@retolab.app',
+    payoutAccountNumber: '',
   };
 
   activeNav: CompanyNavPath = 'dashboard';
@@ -348,6 +395,10 @@ export class CompanyDashboardComponent {
     return this.companySettings.contactEmail;
   }
 
+  get currentCompanyPayoutAccount(): string {
+    return this.companySettings.payoutAccountNumber;
+  }
+
   get currentCompanyInitials(): string {
     return this.buildInitials(this.currentCompanyName);
   }
@@ -372,6 +423,116 @@ export class CompanyDashboardComponent {
     const values = this.configFields.map((field) => field.value.trim());
     const completed = values.filter((value) => value.length > 0).length;
     return Math.round((completed / values.length) * 100);
+  }
+
+  get topApplicants(): TopApplicant[] {
+    if (this.receivedApplications.length === 0) {
+      return this.fallbackTopApplicants;
+    }
+
+    return [...this.receivedApplications]
+      .filter((application) => application.status === 'En revision')
+      .sort((a, b) => b.score - a.score)
+      .map((application) => ({
+        name: application.studentName,
+        studentEmail: application.studentEmail,
+        university: application.university,
+        challenge: application.challengeTitle,
+        score: application.score,
+        avatar: application.avatar,
+        color: application.color,
+        applicationId: application.id,
+        challengeId: application.challengeId,
+        summary: application.summary,
+        focus: [...application.focus],
+        submittedDate: application.submittedDate,
+        status: application.status,
+        payoutAccountNumber: application.payoutAccountNumber,
+        submissionText: application.submissionText,
+      }));
+  }
+
+  get pendingApplicationsCount(): number {
+    if (this.receivedApplications.length === 0) {
+      return this.topApplicants.length;
+    }
+
+    return this.receivedApplications.filter((application) => application.status === 'En revision').length;
+  }
+
+  get assignedRewardsTotal(): number {
+    if (this.receivedApplications.length > 0) {
+      return this.receivedApplications
+        .filter((application) => application.status === 'Seleccionado')
+        .reduce((total, application) => total + this.rewardToNumber(application.reward), 0);
+    }
+
+    return this.publishedChallenges
+      .filter((challenge) => typeof challenge.winner === 'string' && challenge.winner.trim().length > 0)
+      .reduce((total, challenge) => total + this.rewardToNumber(challenge.reward), 0);
+  }
+
+  get assignedRewardsCount(): number {
+    if (this.receivedApplications.length > 0) {
+      return this.receivedApplications.filter((application) => application.status === 'Seleccionado').length;
+    }
+
+    return this.publishedChallenges.filter(
+      (challenge) => typeof challenge.winner === 'string' && challenge.winner.trim().length > 0,
+    ).length;
+  }
+
+  get assignedRewardsAmountBank(): string {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(this.assignedRewardsTotal);
+  }
+
+  get averageAssignedReward(): string {
+    if (this.assignedRewardsCount === 0) {
+      return this.formatReward(0);
+    }
+
+    return this.formatReward(this.assignedRewardsTotal / this.assignedRewardsCount);
+  }
+
+  get analyticsCards(): Array<{ label: string; value: string; desc: string; color: string }> {
+    const totalApplications = this.receivedApplications.length;
+    const selectedApplications = this.receivedApplications.filter(
+      (application) => application.status === 'Seleccionado',
+    ).length;
+    const rejectedApplications = this.receivedApplications.filter(
+      (application) => application.status === 'Rechazado',
+    ).length;
+
+    const conversionRate = totalApplications > 0 ? (selectedApplications / totalApplications) * 100 : 0;
+    const costPerTalent = totalApplications > 0 ? this.assignedRewardsTotal / totalApplications : 0;
+
+    const openChallenges = this.publishedChallenges.filter((challenge) => challenge.status !== 'Cerrado');
+    const sourceChallenges = openChallenges.length > 0 ? openChallenges : this.publishedChallenges;
+    const averageDaysToDeadline = this.calculateAverageDaysToDeadline(sourceChallenges);
+
+    return [
+      {
+        label: 'Tasa de conversion',
+        value: `${conversionRate.toFixed(0)}%`,
+        desc: `${selectedApplications} seleccionados de ${totalApplications} postulaciones`,
+        color: '#00C9A7',
+      },
+      {
+        label: 'Costo por talento',
+        value: this.formatReward(costPerTalent),
+        desc: `${selectedApplications} ganadores y ${rejectedApplications} rechazados`,
+        color: '#6366F1',
+      },
+      {
+        label: 'Tiempo promedio',
+        value: `${averageDaysToDeadline} dias`,
+        desc: 'Promedio hasta la fecha limite de retos visibles',
+        color: '#F59E0B',
+      },
+    ];
   }
 
   get metrics(): MetricItem[] {
@@ -430,6 +591,11 @@ export class CompanyDashboardComponent {
       { key: 'website', label: 'Sitio web', value: this.companySettings.website },
       { key: 'plan', label: 'Plan activo', value: this.companySettings.plan },
       { key: 'contactEmail', label: 'Correo de contacto', value: this.currentCompanyEmail },
+      {
+        key: 'payoutAccountNumber',
+        label: 'Cuenta para depositar pagos',
+        value: this.currentCompanyPayoutAccount ? this.maskAccountNumber(this.currentCompanyPayoutAccount) : 'Sin registrar',
+      },
     ];
   }
 
@@ -571,6 +737,8 @@ export class CompanyDashboardComponent {
       ...notification,
       read: true,
     }));
+
+    this.saveNotifications();
   }
 
   openNotification(notificationId: number): void {
@@ -590,6 +758,8 @@ export class CompanyDashboardComponent {
 
       return item;
     });
+
+    this.saveNotifications();
 
     this.setActiveNav(notification.targetNav);
   }
@@ -722,7 +892,16 @@ export class CompanyDashboardComponent {
       return;
     }
 
+    const previousApplications = this.receivedApplications.length;
+    this.receivedApplications = this.receivedApplications.filter(
+      (application) => application.challengeId !== challengeId,
+    );
+
     this.saveChallenges();
+    if (previousApplications !== this.receivedApplications.length) {
+      this.saveApplications();
+    }
+
     this.actionMessage = 'Reto eliminado correctamente.';
   }
 
@@ -747,18 +926,207 @@ export class CompanyDashboardComponent {
       };
     });
 
+    if (typeof applicant.applicationId === 'number') {
+      this.receivedApplications = this.receivedApplications.map((application) => {
+        if (application.challengeId !== challenge.id) {
+          return application;
+        }
+
+        if (application.id === applicant.applicationId) {
+          return {
+            ...application,
+            status: 'Seleccionado',
+            score: Math.max(application.score, applicant.score),
+            reward: challenge.reward,
+          };
+        }
+
+        return {
+          ...application,
+          status: 'Rechazado',
+        };
+      });
+
+      this.saveApplications();
+
+      this.syncStudentApplicationsAfterCompanyDecision(
+        challenge.id,
+        applicant.name,
+        applicant.studentEmail,
+        'Seleccionado',
+        challenge.reward,
+      );
+      this.pushStudentOutcomeNotification(
+        applicant.name,
+        applicant.studentEmail,
+        `Fuiste seleccionado para el reto ${challenge.title}. Ahora puedes revisar tu recompensa asignada.`,
+      );
+    }
+
     this.saveChallenges();
     this.setActiveNav('retos');
     this.actionMessage = `Ganador asignado: ${applicant.name} en ${challenge.title}.`;
   }
 
+  assignReward(applicant: TopApplicant): void {
+    const challenge = this.findChallengeForApplicant(applicant);
+
+    if (!challenge) {
+      this.actionMessage = 'No se encontro el reto para asignar recompensa.';
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const currentReward = this.rewardToNumber(challenge.reward);
+    const entered = window.prompt(
+      `Monto de recompensa para ${applicant.name} (USD)`,
+      String(Math.max(1, currentReward)),
+    );
+
+    if (entered === null) {
+      return;
+    }
+
+    const rewardValue = Number(entered.replace(/[^\d.]/g, ''));
+
+    if (!Number.isFinite(rewardValue) || rewardValue <= 0) {
+      this.actionMessage = 'Ingresa un monto valido mayor a 0 para la recompensa.';
+      return;
+    }
+
+    const formattedReward = this.formatReward(rewardValue);
+
+    this.publishedChallenges = this.publishedChallenges.map((item) => {
+      if (item.id !== challenge.id) {
+        return item;
+      }
+
+      return {
+        ...item,
+        reward: formattedReward,
+      };
+    });
+
+    if (typeof applicant.applicationId === 'number') {
+      this.receivedApplications = this.receivedApplications.map((application) => {
+        if (application.challengeId !== challenge.id) {
+          return application;
+        }
+
+        if (application.id === applicant.applicationId) {
+          return {
+            ...application,
+            status: 'Seleccionado',
+            reward: formattedReward,
+            rewardAssigned: true,
+          };
+        }
+
+        return application;
+      });
+
+      this.saveApplications();
+      this.syncStudentApplicationsAfterCompanyDecision(
+        challenge.id,
+        applicant.name,
+        applicant.studentEmail,
+        'Seleccionado',
+        formattedReward,
+      );
+      this.pushStudentOutcomeNotification(
+        applicant.name,
+        applicant.studentEmail,
+        `Se te asigno la recompensa ${formattedReward} para el reto ${challenge.title}.`,
+      );
+    }
+
+    this.saveChallenges();
+    this.actionMessage = `Recompensa asignada a ${applicant.name}: ${formattedReward}.`;
+  }
+
+  rejectProposal(applicant: TopApplicant): void {
+    if (applicant.status === 'Seleccionado') {
+      this.actionMessage = 'No puedes rechazar una propuesta ya seleccionada como ganadora.';
+      return;
+    }
+
+    if (applicant.status === 'Rechazado') {
+      this.actionMessage = 'Esta propuesta ya fue rechazada.';
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(`Deseas rechazar la propuesta de ${applicant.name}?`);
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    if (typeof applicant.applicationId !== 'number') {
+      this.actionMessage = 'No se pudo identificar la postulacion para rechazarla.';
+      return;
+    }
+
+    const targetApplication = this.receivedApplications.find((application) => application.id === applicant.applicationId);
+
+    if (!targetApplication) {
+      this.actionMessage = 'No se encontro la postulacion para rechazar.';
+      return;
+    }
+
+    this.receivedApplications = this.receivedApplications.map((application) => {
+      if (application.id !== applicant.applicationId) {
+        return application;
+      }
+
+      return {
+        ...application,
+        status: 'Rechazado',
+      };
+    });
+
+    this.saveApplications();
+
+    this.syncStudentApplicationsAfterCompanyDecision(
+      targetApplication.challengeId,
+      applicant.name,
+      applicant.studentEmail,
+      'Rechazado',
+      targetApplication.reward,
+    );
+
+    this.pushStudentOutcomeNotification(
+      applicant.name,
+      applicant.studentEmail,
+      `Tu propuesta para ${targetApplication.challengeTitle} fue rechazada. Puedes seguir postulando a otros retos.`,
+    );
+
+    this.actionMessage = `Propuesta rechazada: ${applicant.name}.`;
+  }
+
   viewProposal(applicant: TopApplicant): void {
+    const summary = applicant.summary ?? 'Postulacion local sin resumen detallado.';
+    const focus = applicant.focus && applicant.focus.length > 0 ? applicant.focus.join(', ') : 'Sin enfoque registrado';
+    const sentDate = applicant.submittedDate ?? 'Sin fecha';
+    const status = applicant.status ?? 'En revision';
+    const payoutAccount = applicant.payoutAccountNumber?.trim() || 'Sin cuenta registrada';
+    const submissionText = applicant.submissionText?.trim() || 'Sin mensaje adicional registrado.';
+
     const details =
       `Postulante: ${applicant.name}\n` +
       `Universidad: ${applicant.university}\n` +
       `Reto: ${applicant.challenge}\n` +
-      `Score: ${applicant.score}\n\n` +
-      'Esta vista usa datos locales de demostracion.';
+      `Score: ${applicant.score}\n` +
+      `Estado: ${status}\n` +
+      `Enviado: ${sentDate}\n` +
+      `Cuenta para deposito: ${payoutAccount}\n` +
+      `Enfoque: ${focus}\n\n` +
+      `Mensaje del postulante: ${submissionText}\n\n` +
+      `Resumen: ${summary}`;
 
     if (typeof window !== 'undefined') {
       window.alert(details);
@@ -793,6 +1161,7 @@ export class CompanyDashboardComponent {
       website: 'Sitio web',
       plan: 'Plan activo',
       contactEmail: 'Correo de contacto',
+      payoutAccountNumber: 'Cuenta para depositar pagos',
     };
 
     const currentValue = this.companySettings[fieldKey];
@@ -822,6 +1191,15 @@ export class CompanyDashboardComponent {
       this.companySettings = { ...this.companySettings, website: cleanValue };
     } else if (fieldKey === 'plan') {
       this.companySettings = { ...this.companySettings, plan: cleanValue };
+    } else if (fieldKey === 'payoutAccountNumber') {
+      const cleanAccount = cleanValue.replace(/\s+/g, '');
+
+      if (!/^\d{10,20}$/.test(cleanAccount)) {
+        this.actionMessage = 'Ingresa una cuenta de pago valida (10 a 20 digitos).';
+        return;
+      }
+
+      this.companySettings = { ...this.companySettings, payoutAccountNumber: cleanAccount };
     } else {
       this.companySettings = { ...this.companySettings, contactEmail: cleanValue };
     }
@@ -859,6 +1237,7 @@ export class CompanyDashboardComponent {
       id: nextId,
       title: this.challengeForm.title.trim(),
       industry: this.challengeForm.industry,
+      companyName: this.currentCompanyName,
       reward: this.formatReward(rewardValue),
       status: 'Abierto',
       applicants: 0,
@@ -898,6 +1277,7 @@ export class CompanyDashboardComponent {
         title: this.challengeForm.title.trim(),
         description: this.challengeForm.description.trim(),
         industry: this.challengeForm.industry,
+        companyName: challenge.companyName || this.currentCompanyName,
         level: this.challengeForm.level,
         reward: this.formatReward(rewardValue),
         deadline: deadlineLabel,
@@ -911,6 +1291,16 @@ export class CompanyDashboardComponent {
   }
 
   private findChallengeForApplicant(applicant: TopApplicant): PublishedChallenge | null {
+    if (typeof applicant.challengeId === 'number') {
+      const byId = this.publishedChallenges.find(
+        (challenge) => challenge.id === applicant.challengeId && challenge.status !== 'Cerrado',
+      );
+
+      if (byId) {
+        return byId;
+      }
+    }
+
     const target = applicant.challenge.trim().toLowerCase();
 
     const directMatch = this.publishedChallenges.find(
@@ -948,6 +1338,36 @@ export class CompanyDashboardComponent {
     }
 
     return { color: '#00C9A7', icon: 'Target' };
+  }
+
+  private getCompanyNameByIndustry(industry: string): string {
+    const normalized = industry.toLowerCase();
+
+    if (normalized.includes('tecnologia')) {
+      return 'TechFlow';
+    }
+
+    if (normalized.includes('fintech')) {
+      return 'FinNova';
+    }
+
+    if (normalized.includes('logistica')) {
+      return 'LogiCorp';
+    }
+
+    if (normalized.includes('data') || normalized.includes('ai')) {
+      return 'DataSense';
+    }
+
+    if (normalized.includes('marketing')) {
+      return 'GreenAI';
+    }
+
+    if (normalized.includes('cloud')) {
+      return 'CloudX';
+    }
+
+    return this.currentCompanyName;
   }
 
   private formatReward(value: number): string {
@@ -1000,6 +1420,41 @@ export class CompanyDashboardComponent {
     return Number.isFinite(numeric) ? numeric : 0;
   }
 
+  private maskAccountNumber(accountNumber: string): string {
+    const clean = accountNumber.replace(/\s+/g, '').trim();
+
+    if (clean.length <= 4) {
+      return clean;
+    }
+
+    return `****${clean.slice(-4)}`;
+  }
+
+  private calculateAverageDaysToDeadline(challenges: PublishedChallenge[]): number {
+    if (challenges.length === 0) {
+      return 0;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const totalDays = challenges.reduce((sum, challenge) => {
+      const parsedDate = new Date(challenge.deadlineDate);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        return sum;
+      }
+
+      const deadline = new Date(parsedDate);
+      deadline.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.ceil((deadline.getTime() - today.getTime()) / 86400000);
+      return sum + Math.max(0, diffDays);
+    }, 0);
+
+    return Math.max(0, Math.round(totalDays / challenges.length));
+  }
+
   private getSessionCompanyName(): string {
     return this.auth.session()?.name?.trim() || 'Mi empresa';
   }
@@ -1015,6 +1470,7 @@ export class CompanyDashboardComponent {
       website: 'www.retocompany.com',
       plan: 'Enterprise - Renovacion feb 2027',
       contactEmail: this.getSessionCompanyEmail(),
+      payoutAccountNumber: this.auth.currentUserAccountNumber(),
     };
   }
 
@@ -1038,6 +1494,10 @@ export class CompanyDashboardComponent {
       contactEmail: typeof storedSettings.contactEmail === 'string' && storedSettings.contactEmail.trim()
         ? storedSettings.contactEmail.trim()
         : fallbackSettings.contactEmail,
+      payoutAccountNumber:
+        typeof storedSettings.payoutAccountNumber === 'string' && storedSettings.payoutAccountNumber.trim()
+          ? storedSettings.payoutAccountNumber.trim().replace(/\s+/g, '')
+          : fallbackSettings.payoutAccountNumber,
     };
 
     const storedChallenges = this.readJson<unknown>(this.challengesStorageKey, null);
@@ -1049,11 +1509,71 @@ export class CompanyDashboardComponent {
 
       if (parsed.length > 0) {
         this.publishedChallenges = parsed;
-        return;
+      } else {
+        this.publishedChallenges = this.defaultPublishedChallenges.map((challenge) => ({ ...challenge }));
       }
+    } else {
+      this.publishedChallenges = this.defaultPublishedChallenges.map((challenge) => ({ ...challenge }));
     }
 
-    this.publishedChallenges = this.defaultPublishedChallenges.map((challenge) => ({ ...challenge }));
+    const storedApplications = this.readJson<unknown>(this.applicationsStorageKey, null);
+    const knownChallengeIds = new Set(this.publishedChallenges.map((challenge) => challenge.id));
+
+    if (Array.isArray(storedApplications)) {
+      this.receivedApplications = storedApplications
+        .map((item) => this.toCompanyApplicationRecord(item))
+        .filter((item): item is CompanyApplicationRecord => item !== null)
+        .filter((item) => knownChallengeIds.has(item.challengeId));
+    } else {
+      this.receivedApplications = [];
+    }
+
+    const storedNotifications = this.readJson<unknown>(this.notificationsStorageKey, null);
+
+    if (Array.isArray(storedNotifications)) {
+      const parsedNotifications = storedNotifications
+        .map((item) => this.toCompanyNotification(item))
+        .filter((item): item is CompanyNotificationItem => item !== null);
+
+      this.notifications = parsedNotifications.length > 0
+        ? parsedNotifications
+        : this.defaultNotifications.map((notification) => ({ ...notification }));
+    } else {
+      this.notifications = this.defaultNotifications.map((notification) => ({ ...notification }));
+    }
+  }
+
+  private toCompanyNotification(value: unknown): CompanyNotificationItem | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const record = value as Partial<CompanyNotificationItem>;
+
+    if (
+      typeof record.id !== 'number' ||
+      !Number.isFinite(record.id) ||
+      typeof record.title !== 'string' ||
+      typeof record.description !== 'string' ||
+      typeof record.time !== 'string' ||
+      typeof record.read !== 'boolean' ||
+      (record.targetNav !== 'dashboard' &&
+        record.targetNav !== 'retos' &&
+        record.targetNav !== 'postulaciones' &&
+        record.targetNav !== 'analiticas' &&
+        record.targetNav !== 'config')
+    ) {
+      return null;
+    }
+
+    return {
+      id: Math.round(record.id),
+      title: record.title,
+      description: record.description,
+      time: record.time,
+      read: record.read,
+      targetNav: record.targetNav,
+    };
   }
 
   private toPublishedChallenge(value: unknown): PublishedChallenge | null {
@@ -1094,11 +1614,16 @@ export class CompanyDashboardComponent {
         : 'Descripcion no disponible.';
     const level = typeof record.level === 'string' && record.level.trim() ? record.level : 'Intermedio';
     const winner = typeof record.winner === 'string' && record.winner.trim() ? record.winner : undefined;
+    const companyName =
+      typeof record.companyName === 'string' && record.companyName.trim()
+        ? record.companyName.trim()
+        : this.getCompanyNameByIndustry(record.industry);
 
     return {
       id: record.id,
       title: record.title.trim(),
       industry: record.industry.trim(),
+      companyName,
       reward: record.reward,
       status,
       applicants: Math.max(0, Math.round(record.applicants)),
@@ -1114,8 +1639,226 @@ export class CompanyDashboardComponent {
     };
   }
 
+  private toCompanyApplicationRecord(value: unknown): CompanyApplicationRecord | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const record = value as Partial<CompanyApplicationRecord>;
+
+    if (
+      typeof record.id !== 'number' ||
+      !Number.isFinite(record.id) ||
+      typeof record.challengeId !== 'number' ||
+      !Number.isFinite(record.challengeId) ||
+      typeof record.challengeTitle !== 'string' ||
+      !record.challengeTitle.trim() ||
+      typeof record.studentName !== 'string' ||
+      !record.studentName.trim() ||
+      typeof record.studentEmail !== 'string' ||
+      !record.studentEmail.trim() ||
+      typeof record.university !== 'string' ||
+      typeof record.reward !== 'string' ||
+      typeof record.summary !== 'string' ||
+      !Array.isArray(record.focus) ||
+      !record.focus.every((item) => typeof item === 'string') ||
+      typeof record.submittedDate !== 'string' ||
+      typeof record.submittedAt !== 'string' ||
+      typeof record.status !== 'string' ||
+      typeof record.score !== 'number' ||
+      !Number.isFinite(record.score) ||
+      typeof record.color !== 'string' ||
+      typeof record.avatar !== 'string'
+    ) {
+      return null;
+    }
+
+    return {
+      id: Math.round(record.id),
+      challengeId: Math.round(record.challengeId),
+      challengeTitle: record.challengeTitle.trim(),
+      studentName: record.studentName.trim(),
+      studentEmail: record.studentEmail.trim().toLowerCase(),
+      university: record.university.trim(),
+      reward: record.reward,
+      summary: record.summary.trim(),
+      focus: record.focus.filter((item) => item.trim().length > 0),
+      submittedDate: record.submittedDate,
+      submittedAt: record.submittedAt,
+      status: record.status,
+      score: Number(record.score.toFixed(1)),
+      color: record.color,
+      avatar: record.avatar || this.buildInitials(record.studentName),
+      rewardAssigned: typeof record.rewardAssigned === 'boolean' ? record.rewardAssigned : false,
+      payoutAccountNumber:
+        typeof record.payoutAccountNumber === 'string' ? record.payoutAccountNumber.replace(/\s+/g, '').trim() : '',
+      submissionText:
+        typeof record.submissionText === 'string' ? record.submissionText.trim() : 'Sin mensaje adicional registrado.',
+    };
+  }
+
+  private syncStudentApplicationsAfterCompanyDecision(
+    challengeId: number,
+    studentName: string,
+    studentEmail: string | undefined,
+    status: string,
+    reward: string,
+  ): void {
+    const normalizedEmail = this.normalizeEmail(studentEmail);
+
+    if (!normalizedEmail) {
+      return;
+    }
+
+    const storageKey = this.getStudentApplicationsStorageKey(normalizedEmail);
+    const stored = this.readJson<unknown>(storageKey, []);
+
+    const records = Array.isArray(stored)
+      ? stored.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      : [];
+
+    const challenge = this.publishedChallenges.find((item) => item.id === challengeId);
+    const sourceApplication = this.receivedApplications.find(
+      (application) =>
+        application.challengeId === challengeId &&
+        application.studentEmail.trim().toLowerCase() === normalizedEmail,
+    );
+    const challengeTitle = sourceApplication?.challengeTitle ?? challenge?.title ?? 'Reto asignado';
+    const companyName = challenge?.companyName || this.currentCompanyName;
+
+    let changed = false;
+
+    const updated = records.map((record) => {
+      const recordId = record['challengeId'];
+      const recordTitle = typeof record['title'] === 'string' ? record['title'].trim().toLowerCase() : '';
+
+      const sameChallenge =
+        (typeof recordId === 'number' && recordId === challengeId) ||
+        (challengeTitle.trim().length > 0 && recordTitle === challengeTitle.trim().toLowerCase());
+
+      if (!sameChallenge) {
+        return record;
+      }
+
+      changed = true;
+
+      return {
+        ...record,
+        challengeId,
+        title: challengeTitle,
+        company: companyName,
+        reward,
+        status,
+        statusColor: status === 'Seleccionado' ? '#00C9A7' : status === 'Rechazado' ? '#EF4444' : '#F59E0B',
+        statusBg: status === 'Seleccionado' ? '#F0FDF9' : status === 'Rechazado' ? '#FEF2F2' : '#FFFBEB',
+        companyFeedback:
+          status === 'Seleccionado'
+            ? `Fuiste seleccionado. Recompensa asignada: ${reward}.`
+            : 'La empresa cerro el proceso con otro perfil para este reto.',
+        nextStep:
+          status === 'Seleccionado'
+            ? 'Coordina con la empresa la entrega y validacion final del reto.'
+            : 'Puedes seguir postulando a otros retos disponibles.',
+        applicantEmail: normalizedEmail,
+      };
+    });
+
+    if (!changed && sourceApplication) {
+      const nextId = updated.reduce((max, item) => {
+        const idValue = item['id'];
+        return typeof idValue === 'number' && Number.isFinite(idValue) ? Math.max(max, idValue) : max;
+      }, 0) + 1;
+
+      updated.unshift({
+        id: nextId,
+        challengeId,
+        title: challengeTitle,
+        company: companyName,
+        reward,
+        status,
+        statusColor: status === 'Seleccionado' ? '#00C9A7' : status === 'Rechazado' ? '#EF4444' : '#F59E0B',
+        statusBg: status === 'Seleccionado' ? '#F0FDF9' : status === 'Rechazado' ? '#FEF2F2' : '#FFFBEB',
+        submittedAt: sourceApplication.submittedAt,
+        submittedDate: sourceApplication.submittedDate,
+        summary: sourceApplication.summary,
+        focus: [...sourceApplication.focus],
+        nextStep:
+          status === 'Seleccionado'
+            ? 'Coordina con la empresa la entrega y validacion final del reto.'
+            : 'Puedes seguir postulando a otros retos disponibles.',
+        companyFeedback:
+          status === 'Seleccionado'
+            ? `Fuiste seleccionado. Recompensa asignada: ${reward}.`
+            : 'La empresa cerro el proceso con otro perfil para este reto.',
+        applicantEmail: normalizedEmail,
+      });
+
+      changed = true;
+    }
+
+    if (!changed) {
+      return;
+    }
+
+    this.writeJson(storageKey, updated);
+  }
+
+  private pushStudentOutcomeNotification(studentName: string, studentEmail: string | undefined, description: string): void {
+    const normalizedEmail = this.normalizeEmail(studentEmail);
+
+    if (!normalizedEmail) {
+      return;
+    }
+
+    const storageKey = this.getStudentNotificationsStorageKey(normalizedEmail);
+    const stored = this.readJson<unknown>(storageKey, []);
+    const records = Array.isArray(stored)
+      ? stored.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+      : [];
+
+    const nextId = records.reduce((max, item) => {
+      const idValue = item['id'];
+      return typeof idValue === 'number' && Number.isFinite(idValue) ? Math.max(max, idValue) : max;
+    }, 0) + 1;
+
+    const notification = {
+      id: nextId,
+      title: `Actualizacion de postulacion para ${studentName}`,
+      description,
+      time: 'Ahora',
+      read: false,
+      targetNav: 'postulaciones',
+    };
+
+    this.writeJson(storageKey, [notification, ...records]);
+  }
+
+  private getStudentApplicationsStorageKey(email: string): string {
+    return `${this.studentApplicationsStorageKeyPrefix}${email}`;
+  }
+
+  private getStudentNotificationsStorageKey(email: string): string {
+    return `${this.studentNotificationsStorageKeyPrefix}${email}`;
+  }
+
+  private normalizeEmail(value: string | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    return value.trim().toLowerCase();
+  }
+
   private saveChallenges(): void {
     this.writeJson(this.challengesStorageKey, this.publishedChallenges);
+  }
+
+  private saveApplications(): void {
+    this.writeJson(this.applicationsStorageKey, this.receivedApplications);
+  }
+
+  private saveNotifications(): void {
+    this.writeJson(this.notificationsStorageKey, this.notifications);
   }
 
   private saveSettings(): void {
